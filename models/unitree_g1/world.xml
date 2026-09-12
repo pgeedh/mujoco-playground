@@ -1,0 +1,35 @@
+<mujoco model="g1 park world">
+  <include file="g1.xml"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.2 0.2 0.2" specular="0.6 0.6 0.6"/>
+    <rgba haze="0.6 0.75 0.9 1"/>
+    <global azimuth="140" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.55 0.75 0.95" rgb2="0.9 0.95 1" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.32 0.5 0.28" rgb2="0.26 0.42 0.22"
+      markrgb="0.6 0.6 0.6" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="20 20" reflectance="0.05"/>
+    <material name="obstacle" rgba="0.75 0.35 0.2 1"/>
+    <material name="ramp" rgba="0.55 0.55 0.6 1"/>
+  </asset>
+
+  <worldbody>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+
+    <!-- Obstacle 1: low barrier to jump over -->
+    <body name="obstacle_barrier" pos="2 0 0.15">
+      <geom name="obstacle_barrier_geom" type="box" size="0.15 1 0.15" material="obstacle"/>
+    </body>
+
+    <!-- Obstacle 2: a step/ramp to climb -->
+    <body name="obstacle_ramp" pos="4.5 0 0.1">
+      <geom name="obstacle_ramp_geom" type="box" size="0.5 1 0.1" material="ramp"/>
+    </body>
+    <body name="obstacle_step" pos="5.3 0 0.2">
+      <geom name="obstacle_step_geom" type="box" size="0.3 1 0.2" material="ramp"/>
+    </body>
+  </worldbody>
+</mujoco>
