@@ -50,6 +50,10 @@ export class MuJoCoDemo {
     this.camera.name = 'PerspectiveCamera';
     this.camera.position.set(2.0, 1.7, 1.7);
     this.scene.add(this.camera);
+    // The camera looks down local -Z by default; this model's forward
+    // (the direction it walks under W) is local +X, so first-person mode
+    // needs this fixed correction to look the right way.
+    this._fpvCorrection = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
 
     this.scene.background = new THREE.Color(0.15, 0.25, 0.35);
     this.scene.fog = new THREE.Fog(this.scene.background, 15, 25.5 );
@@ -104,6 +108,35 @@ export class MuJoCoDemo {
 
     // Initialize the Drag State Manager.
     this.dragStateManager = new DragStateManager(this.scene, this.renderer, this.camera, this.container.parentElement, this.controls);
+
+    // C toggles third-person (free orbit camera) vs first-person (glued to
+    // the robot's head, looking the way it's facing).
+    this.cameraMode = 'third';
+    this._prevKeyC = false;
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyC' && !this._prevKeyC) {
+        if (this.cameraMode === 'third') {
+          // Leaving third-person: remember exactly where the orbit camera
+          // was so switching back restores it, instead of OrbitControls
+          // re-syncing its orbit radius from wherever first-person left
+          // the camera (which produced a bizarre inside-the-chest close-up).
+          this._savedThirdPersonPos = this.camera.position.clone();
+          this._savedThirdPersonQuat = this.camera.quaternion.clone();
+          this.cameraMode = 'first';
+          this.controls.enabled = false;
+        } else {
+          this.cameraMode = 'third';
+          if (this._savedThirdPersonPos) {
+            this.camera.position.copy(this._savedThirdPersonPos);
+            this.camera.quaternion.copy(this._savedThirdPersonQuat);
+          }
+          this.controls.enabled = true;
+          this.controls.update();
+        }
+      }
+      if (e.code === 'KeyC') this._prevKeyC = true;
+    });
+    window.addEventListener('keyup', (e) => { if (e.code === 'KeyC') this._prevKeyC = false; });
   }
 
   async init() {
@@ -124,6 +157,8 @@ export class MuJoCoDemo {
     this.g1Controller.bindModel(this.model, mujoco);
     await this.g1Controller.load();
 
+    this.torsoBodyId = mujoco.mj_name2id(this.model, mujoco.mjtObj.mjOBJ_BODY.value, "torso_link");
+
     this.gui = new GUI();
     setupGUI(this);
   }
@@ -136,7 +171,7 @@ export class MuJoCoDemo {
 
   render(timeMS) {
     if (!this.model || !this.data || !this.g1Controller.ready) { return; }
-    this.controls.update();
+    if (this.cameraMode === 'third') { this.controls.update(); }
     this.g1Controller.update(this.data);
 
     if (!this.params["paused"]) {
@@ -222,6 +257,18 @@ export class MuJoCoDemo {
         getQuaternion(this.data.xquat, b, this.bodies[b].quaternion);
         this.bodies[b].updateWorldMatrix();
       }
+    }
+
+    // First-person camera: glued to the torso, looking the way it's
+    // facing. The camera's default look direction is local -Z, but this
+    // model's "forward" (the direction it actually walks under W) is
+    // local +X, hence the fixed -90° yaw correction.
+    if (this.cameraMode === 'first' && this.torsoBodyId >= 0) {
+      const torsoPos = getPosition(this.data.xpos, this.torsoBodyId, new THREE.Vector3());
+      const torsoQuat = getQuaternion(this.data.xquat, this.torsoBodyId, new THREE.Quaternion());
+      const eyeOffset = new THREE.Vector3(0.08, 0.32, 0).applyQuaternion(torsoQuat);
+      this.camera.position.copy(torsoPos).add(eyeOffset);
+      this.camera.quaternion.copy(torsoQuat).multiply(this._fpvCorrection);
     }
 
     // Update light transforms.

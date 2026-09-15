@@ -20,7 +20,11 @@ deploy as a static site (Vercel/Render).
   bindings have a bug that makes runtime equality-constraint toggling
   (`data.eq_active`) unusable. Grabbing is done by directly snapping the
   held object's position to the wrist every physics step — a kinematic
-  hack, not physical grasping.
+  hack, not physical grasping. The model does use the real hands-enabled
+  G1 variant (`g1_with_hands.xml`, 14 extra finger joints) and the fingers
+  genuinely close/open via their own position actuators in sync with grab
+  state, so it looks like a real grasp — but the object's placement itself
+  is still the kinematic snap, not held by finger contact/friction.
 - **Jump (Space)**: no pretrained jump/parkour skill exists publicly for
   the G1 either. It's a scripted crouch-then-extend leg trajectory that
   briefly overrides the walking policy's output.
@@ -29,6 +33,9 @@ deploy as a static site (Vercel/Render).
   policy's internal state) — not the whole world, so already-delivered
   task progress and other props are untouched. There's no trained
   recovery/get-up skill, so restarting the robot is the only option.
+- **Camera (C)**: toggles between third-person (free orbit) and first-person
+  (glued to the torso, looking the way it's facing) — this part's just
+  normal Three.js camera work, nothing ML-related.
 
 ## The task
 
@@ -75,8 +82,9 @@ python scripts/export_policy.py /tmp/unitree_rl_gym/deploy/pre_train/g1/motion.p
 
 - `models/unitree_g1/` — vendored G1 MJCF + meshes from
   [mujoco_menagerie](https://github.com/google-deepmind/mujoco_menagerie)
-  (BSD-3-Clause, see `LICENSE` in that folder), plus `world.xml`, the task
-  scene built on top of it.
+  (BSD-3-Clause, see `LICENSE` in that folder) — `g1_with_hands.xml` is the
+  one actually used (`g1.xml`, without fingers, is kept for reference) —
+  plus `world.xml`, the task scene built on top of it.
 - `web/` — the browser app: MuJoCo WASM (`@mujoco/mujoco`) + Three.js for
   physics/rendering (trimmed down from
   [zalo/mujoco_wasm](https://github.com/zalo/mujoco_wasm)'s demo scaffold —
