@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>MuJoCo Demo</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <meta name="application-name"   content="mujoco_wasm">
+        <meta name="description"        content="MuJoCo Testbed">
+        <meta name="keywords"           content="MuJoCo">
+        <meta name="author"             content="zalo">
+        <meta name="viewport"           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no, shrink-to-fit=0">
+        <meta name="theme-color"        content="#ffffff">
+        <link rel ="icon" type="image/x-icon" href="./assets/favicon.png">
+    </head>
+
+    <body style="margin:0px; background-color:rgb(255, 255, 255); overflow:hidden; position:fixed; min-height: 100%;
+                 touch-action: none;
+                 -webkit-touch-callout: none; /* iOS Safari */
+                 -webkit-user-select: none; /* Safari */
+                 -khtml-user-select: none; /* Konqueror HTML */
+                 -moz-user-select: none; /* Old versions of Firefox */
+                 -ms-user-select: none; /* Internet Explorer/Edge */
+                 user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */">
+        <h1 hidden></h1> <!-- Puts the Lighthouse Score over 90 heheh-->
+
+		<!-- Import maps polyfill -->
+		<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+        <!-- Allows three.js Examples to work without building -->
+        <script type="importmap">
+            { "imports": { "three": "./node_modules/three/build/three.module.js", "three/addons/": "./node_modules/three/examples/jsm/"} }
+        </script>
+
+        <script src="./node_modules/onnxruntime-web/dist/ort.min.js"></script>
+
+        <div id="controls-help" style="position:absolute; bottom:10px; left:10px; z-index:1000;
+             color:white; font:14px/1.5 Arial; background:rgba(0,0,0,0.55); padding:10px 14px;
+             border-radius:8px; pointer-events:none;">
+            <b>W A S D</b> walk/turn &nbsp;·&nbsp; <b>Space</b> jump (scripted, not learned)
+            &nbsp;·&nbsp; <b>Q</b> grab/release with right hand &nbsp;·&nbsp; <b>E</b> grab/release with left hand
+            <div id="grab-status" style="margin-top:4px; opacity:0.8;">Right hand: empty | Left hand: empty</div>
+            <div style="margin-top:2px; opacity:0.6; font-size:12px;">Load the dishwasher: carry all 3 plates from the counter to the dishwasher down the path. Falls over and stays down? Auto-resets after ~0.6s.</div>
+        </div>
+
+        <div id="appbody" style="position: absolute;">
+            <!--<div id="error"></div>
+            <script type="module" src="./src/Debug.js"></script>-->
+            <script type="module" src="./src/main.js"></script>
+        </div>
+    </body>
+</html>
