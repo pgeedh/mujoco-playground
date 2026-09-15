@@ -57,6 +57,7 @@ const G1_PARK_FILES = [
   "g1_park/assets/waist_roll_link_rev_1_0.STL",
   "g1_park/assets/waist_yaw_link_rev_1_0.STL",
   "g1_park/g1.xml",
+  "g1_park/g1_with_hands.xml",
   "g1_park/world.xml",
 ];
 

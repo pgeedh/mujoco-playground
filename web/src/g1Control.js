@@ -1,10 +1,13 @@
 // Real-time control for the G1: legs are driven by the actual pretrained
 // walking policy from unitree_rl_gym (converted from TorchScript to ONNX,
 // see scripts/export_policy.py), run client-side via onnxruntime-web.
-// Arms/waist are held at a fixed relaxed pose (the checkpoint never learned
-// to control them). Jump and grab are NOT learned skills — no pretrained
-// policy for either exists publicly for the G1 — they're scripted/heuristic
-// behaviors layered on top, described inline below.
+// Waist/arms are held at a fixed relaxed pose (the checkpoint never learned
+// to control them). Fingers open/close based on grab state, for a visual
+// close-the-hand motion — this is NOT a physics grasp (see GRABBABLE_BODIES
+// handling below): the object still snaps to the wrist kinematically, the
+// fingers are just cosmetic. Jump and grab are NOT learned skills — no
+// pretrained policy for either exists publicly for the G1 — they're
+// scripted/heuristic behaviors layered on top, described inline below.
 
 const ort = window.ort;
 
@@ -12,8 +15,25 @@ const CFG = {
   kpsLeg: [100, 100, 100, 150, 40, 40, 100, 100, 100, 150, 40, 40],
   kdsLeg: [2, 2, 2, 4, 2, 2, 2, 2, 2, 4, 2, 2],
   legDefaultAngles: [-0.1, 0.0, 0.0, 0.3, -0.2, 0.0, -0.1, 0.0, 0.0, 0.3, -0.2, 0.0],
-  // waist (3) + left arm (7) + right arm (7), from g1.xml's "stand" keyframe
-  armWaistAngles: [0, 0, 0, 0.2, 0.2, 0, 1.28, 0, 0, 0, 0.2, -0.2, 0, 1.28, 0, 0, 0],
+  // waist (3) + left arm (7), from g1_with_hands.xml's "stand" keyframe.
+  // Actuator layout (43 total, see g1_with_hands.xml): legs 0-11 (motors,
+  // policy-controlled), waist 12-14, left arm 15-21, left hand 22-28,
+  // right arm 29-35, right hand 36-42.
+  waistLeftArmAngles: [0, 0, 0, 0.2, 0.2, 0, 1.28, 0, 0, 0],
+  rightArmAngles: [0.2, -0.2, 0, 1.28, 0, 0, 0],
+  // Finger actuator order differs per hand (mirrors the joint definitions
+  // in g1_with_hands.xml): left is [thumb0,thumb1,thumb2,middle0,middle1,
+  // index0,index1]; right swaps index/middle: [thumb0,thumb1,thumb2,
+  // index0,index1,middle0,middle1]. "Open" matches the stand keyframe's
+  // relaxed hand; "closed" curls the fingers into a loose grip. There's no
+  // real force-closure grasp here (see g1Control.js's grab code) — this is
+  // purely a visual finger-close synced to the same kinematic snap-to-wrist
+  // that was already carrying the object, per the user's choice to keep the
+  // reliable snap rather than risk full contact-based holding.
+  leftHandOpen: [0, 1.05, 0, 0, 0, 0, 0],
+  leftHandClosed: [0, 1.05, 1.5, -1.3, -1.6, -1.3, -1.6],
+  rightHandOpen: [0, -1.05, 0, 0, 0, 0, 0],
+  rightHandClosed: [0, -1.05, 1.5, 1.3, 1.6, 1.3, 1.6],
   angVelScale: 0.25,
   dofPosScale: 1.0,
   dofVelScale: 0.05,
@@ -94,13 +114,6 @@ export class G1Controller {
   bindModel(model, mujoco) {
     this.model = model;
     this.mujoco = mujoco;
-    // The G1's own freejoint+29 joints (nq=36, nv=35) come first in qpos/qvel
-    // since <include file="g1.xml"/> is the first thing in world.xml — every
-    // other body (plates, dishwasher, ...) occupies the indices after this.
-    // Used by _resetAfterFall to reset only the robot, not the whole world.
-    this.robotNq = 36;
-    this.robotNv = 35;
-    this.robotQpos0 = Float32Array.from(model.qpos0.slice(0, this.robotNq));
     const nameId = (type, name) => mujoco.mj_name2id(model, type, name);
     this.rightWristBody = nameId(mujoco.mjtObj.mjOBJ_BODY.value, "right_wrist_yaw_link");
     this.leftWristBody = nameId(mujoco.mjtObj.mjOBJ_BODY.value, "left_wrist_yaw_link");
@@ -120,6 +133,15 @@ export class G1Controller {
         dofAdr: model.jnt_dofadr[jntAdr],
       };
     }
+    // The robot itself (however many DOF it has — this changed once when
+    // hands were added) occupies every qpos/qvel index before the first
+    // prop body, since <include file="g1_with_hands.xml"/> is the first
+    // thing in world.xml. Derived rather than hardcoded so this doesn't
+    // silently break again if the model changes. Used by _resetAfterFall
+    // to reset only the robot, not the whole world.
+    this.robotNq = this.propJoints[GRABBABLE_BODIES[0]].qposAdr;
+    this.robotNv = this.propJoints[GRABBABLE_BODIES[0]].dofAdr;
+    this.robotQpos0 = Float32Array.from(model.qpos0.slice(0, this.robotNq));
     this.zoneBodies = {};
     for (const zoneName of Object.values(TASK_ZONES)) {
       this.zoneBodies[zoneName] = nameId(mujoco.mjtObj.mjOBJ_BODY.value, zoneName);
@@ -368,8 +390,21 @@ export class G1Controller {
       const dq = data.qvel[6 + i];
       data.ctrl[i] = CFG.kpsLeg[i] * (legTarget[i] - q) - CFG.kdsLeg[i] * dq;
     }
-    for (let i = 0; i < CFG.armWaistAngles.length; i++) {
-      data.ctrl[12 + i] = CFG.armWaistAngles[i];
+    // Actuator layout: waist+left-arm 12-21, left hand 22-28, right arm
+    // 29-35, right hand 36-42 (see CFG comment above).
+    for (let i = 0; i < CFG.waistLeftArmAngles.length; i++) {
+      data.ctrl[12 + i] = CFG.waistLeftArmAngles[i];
+    }
+    const leftHandTarget = this.heldByLeftHand ? CFG.leftHandClosed : CFG.leftHandOpen;
+    for (let i = 0; i < leftHandTarget.length; i++) {
+      data.ctrl[22 + i] = leftHandTarget[i];
+    }
+    for (let i = 0; i < CFG.rightArmAngles.length; i++) {
+      data.ctrl[29 + i] = CFG.rightArmAngles[i];
+    }
+    const rightHandTarget = this.heldByRightHand ? CFG.rightHandClosed : CFG.rightHandOpen;
+    for (let i = 0; i < rightHandTarget.length; i++) {
+      data.ctrl[36 + i] = rightHandTarget[i];
     }
   }
 
