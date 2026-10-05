@@ -10,6 +10,7 @@ const CSS = `
 #menu{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:radial-gradient(ellipse at 50% 30%,rgba(10,30,55,.82),rgba(5,10,20,.95));color:#EAF4FE;
   font:15px/1.5 -apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;box-sizing:border-box;text-align:center}
+#menu[hidden],#change-robot[hidden]{display:none}
 #menu h1{margin:0 0 6px;font:400 44px Impact,'Anton','Arial Narrow Bold',sans-serif;letter-spacing:2px}
 #menu p.sub{margin:0 0 28px;color:#C5E3FE;opacity:.85}
 #menu .cards{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
