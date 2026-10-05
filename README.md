@@ -40,8 +40,7 @@ that can go in is a robot with a dosimeter on its chest.*
   [unitree_rl_gym](https://github.com/unitreerobotics/unitree_rl_gym) (an LSTM exported to ONNX, `scripts/g1/export_policy.py`)
   running at 50 Hz in the browser. If it falls it is stood back up where it fell; each fall costs points.
 - **Radiation model** (`web/src/robots/g1/radiation.js`). Dose rate = background + `A / (r² + ε)` per leak, multiplied by 0.12 for every
-  concrete shield wall and 0.05 for the reactor's bio-shield that lies between you and the leak. You read it on a gauge, hear it
-  as a Geiger counter (Poisson clicks, `geiger.js`), and see it painted along your path on the plan map. Steam is vented at *all* six
+  concrete shield wall and 0.05 for the reactor's bio-shield that lies between you and the leak. You read it on a gauge and see it painted along your path on the plan map. Steam is vented at *all* six
   couplings, so steam alone gives nothing away.
 - **Dose budget.** The robot's electronics tolerate 10 Gy. Stand next to a leak and it dies in seconds ("electronics fried by
   radiation"); triangulate from a few metres instead. Flags must land within 3.5 m of a leak.
@@ -243,7 +242,7 @@ web/
    │  ├─ sceneLoader.js             downloads a scene's files into MuJoCo's virtual filesystem
    │  └─ worlds.js                  optional World Labs / glTF backdrops
    └─ robots/
-      ├─ g1/       controller.js (walking policy, jump, falls) · nuclear.js (mission) · radiation.js · geiger.js · plantMap.js · story.js
+      ├─ g1/       controller.js (walking policy, jump, falls) · nuclear.js (mission) · radiation.js · plantMap.js · story.js
       ├─ franka/   controller.js (IK teleop of two arms + the biohazard mission) · story.js
       └─ husky/    controller.js (driving, battery, mission) · slam.js (lidar, odometry, scan matching) · minimap.js · story.js
 scripts/
