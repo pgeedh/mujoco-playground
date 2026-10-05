@@ -13,6 +13,8 @@ const CSS = `
 #bench .t{font-weight:700;letter-spacing:.5px}
 #bench .clock{font:600 22px ui-monospace,Menlo,monospace;margin:2px 0}
 #bench .m{opacity:.85}
+#bench .clock.hot{color:#FF6B5B;animation:benchBlink .6s steps(2) infinite}
+@keyframes benchBlink{50%{opacity:.45}}
 #bench .res{margin:6px 0 2px;font-weight:700;font-size:15px}
 #bench .res.ok{color:#7CF2A5}#bench .res.no{color:#FFB3A7}
 #bench .btns{margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
@@ -78,12 +80,15 @@ export class Bench {
     }
     this.time += dt;
     if (this.ctl.isSuccess()) this._finish(true);
+    else if (this.ctl.isFinished && this.ctl.isFinished()) this._finish(false, "report filed");
+    else if (this.ctl.isFailed && this.ctl.isFailed()) this._finish(false, this.ctl.failReason());
     else if (this.time >= this.env.timeLimit) this._finish(false);
   }
 
-  _finish(success) {
+  _finish(success, reason) {
     this.state = "done";
     this.success = success;
+    this.reason = reason || "time up";
     this.finalScore = Math.round(this.ctl.score(this.time, this.env.timeLimit, success));
     this.finalMetrics = this.ctl.getMetrics();
     this._render();
@@ -98,13 +103,14 @@ export class Bench {
   _render() {
     const m = this.state === "done" ? this.finalMetrics : this.ctl.getMetrics();
     const metrics = Object.entries(m).map(([k, v]) => `${k}: <b>${v}</b>`).join(" &nbsp;·&nbsp; ");
-    const clock = this.time.toFixed(1).padStart(5, "0");
+    const rem = Math.max(0, this.env.timeLimit - this.time);
+    const clock = this.env.countdown ? `${String(Math.floor(rem / 60)).padStart(2, "0")}:${String(Math.floor(rem % 60)).padStart(2, "0")}` : this.time.toFixed(1).padStart(5, "0");
     let body = `<div class="t">${this.env.name.toUpperCase()} · ${this.env.task} · seed ${this.seed}</div>`;
-    if (this.state === "ready") body += `<div class="clock">READY</div><div class="m">Move to start the clock · limit ${this.env.timeLimit}s</div>`;
-    else body += `<div class="clock">${clock}s</div>`;
+    if (this.state === "ready") body += `<div class="clock">READY</div><div class="m">${this.env.countdown ? "Move to start the purge countdown" : "Move to start the clock"} · limit ${this.env.timeLimit}s</div>`;
+    else body += `<div class="clock${this.env.countdown && rem < 30 ? " hot" : ""}">${this.env.countdown ? "PURGE IN " + clock : clock + "s"}</div>`;
     if (this.state !== "ready") body += `<div class="m">${metrics}</div>`;
     if (this.state === "done") {
-      body += `<div class="res ${this.success ? "ok" : "no"}">${this.success ? "SUCCESS" : "TIME UP"} · score ${this.finalScore}/100</div>`;
+      body += `<div class="res ${this.success ? "ok" : "no"}">${this.success ? "SUCCESS" : this.reason.toUpperCase()} · score ${this.finalScore}/100</div>`;
     }
     body += `<div class="btns"><button data-a="retry">Retry</button><button data-a="seed">New seed</button><button data-a="export">Export JSON</button></div>`;
     this.el.innerHTML = body;

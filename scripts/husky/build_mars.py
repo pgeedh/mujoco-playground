@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 
 OUT = Path("web/assets/scenes/rover_mars")
-N, R, ZMAX = 129, 30.0, 3.0            # grid size, half-extent (m), max elevation (m)
+N, R, ZMAX = 193, 30.0, 3.0            # grid size, half-extent (m), max elevation (m)
 rng = np.random.default_rng(7)
 xs = np.linspace(-R, R, N)
 X, Y = np.meshgrid(xs, xs)               # row index -> y, col index -> x
@@ -19,12 +19,17 @@ for _ in range(7):                       # rolling low-frequency relief
     H += 0.22 * np.sin(kx * X + ph[0]) * np.cos(ky * Y + ph[1])
 dune_dir = np.array([0.8, 0.6])
 H += 0.12 * np.sin((X * dune_dir[0] + Y * dune_dir[1]) * 0.9 + 0.5 * np.sin(Y * 0.15))   # dune ripples
-CRATERS = [(-4, -2, 8.5, 1.1), (12, -14, 7.0, 0.9), (-16, 12, 7.5, 1.0), (18, 16, 6.0, 0.8), (2, 20, 5.0, 0.6)]
+CRATERS = [(-4, -2, 8.5, 0.8), (12, -14, 7.0, 0.7), (-16, 12, 7.5, 0.75), (18, 16, 6.0, 0.6), (2, 20, 5.0, 0.45)]
 for cx, cy, cr, depth in CRATERS:
     r = np.hypot(X - cx, Y - cy)
     bowl = np.where(r < cr, depth * np.clip(1 - (r / cr) ** 2, 0, None) ** 1.5, 0)
-    rim = 0.28 * depth * np.exp(-(((r - cr) / (0.22 * cr)) ** 2))
+    rim = 0.2 * depth * np.exp(-(((r - cr) / (0.22 * cr)) ** 2))
     H += -bowl + rim
+
+# Fine-scale gravel/ripple roughness so the ride is bumpy (a few cm).
+from scipy.ndimage import gaussian_filter
+H += 0.045 * gaussian_filter(rng.normal(size=(N, N)), 1.2) / 0.28
+H += 0.02 * np.sin(X * 3.1 + 1.3 * np.sin(Y * 2.3)) * np.cos(Y * 2.7)
 
 def flatten(cx, cy, rad, blend=2.5):
     r = np.hypot(X - cx, Y - cy)
@@ -53,10 +58,13 @@ with open(OUT / "assets" / "terrain_visual.obj", "w") as f:
     for i in range(N):
         for j in range(N):
             f.write(f"v {xs[j]:.4f} {xs[i]:.4f} {H[i, j]:.4f}\n")
+    for i in range(N):
+        for j in range(N):
+            f.write(f"vt {j / (N - 1):.5f} {i / (N - 1):.5f}\n")          # planar UVs for the ground photo
     for i in range(N - 1):
         for j in range(N - 1):
             a = i * N + j + 1; b = a + 1; c = a + N; d = c + 1
-            f.write(f"f {a} {b} {d}\nf {a} {d} {c}\n")
+            f.write(f"f {a}/{a} {b}/{b} {d}/{d}\nf {a}/{a} {d}/{d} {c}/{c}\n")
 
 # ---- boulders -----------------------------------------------------------------
 keep_clear = [np.array(p) for p in SITES.values()]
@@ -78,7 +86,7 @@ wheels = []
 for name, sx, sy in (("fl", 1, 1), ("fr", 1, -1), ("rl", -1, 1), ("rr", -1, -1)):
     wheels.append(f'''      <body name="wheel_{name}" pos="{sx*WB/2} {sy*TR/2} {WZ}">
         <joint name="wj_{name}" axis="0 1 0" damping="0.2" armature="0.01"/>
-        <geom type="cylinder" size="{WR} {WW/2}" euler="1.5708 0 0" mass="2.64" friction="0.5 0.01 0.001" material="tire" condim="3"/>
+        <geom type="cylinder" size="{WR} {WW/2}" euler="1.5708 0 0" mass="2.64" friction="0.75 0.01 0.001" material="tire" condim="3"/>
         <geom type="mesh" mesh="wheel" contype="0" conaffinity="0" material="tire" mass="0"/>
       </body>''')
 
@@ -87,7 +95,7 @@ sz0 = height_at(*START) + BASE_Z + 0.04
 LX, LY = LANDER
 lz = height_at(LX, LY)
 xml = f'''<mujoco model="rover_mars">
-  <compiler angle="radian" meshdir="assets"/>
+  <compiler angle="radian" meshdir="assets" texturedir="assets"/>
   <option timestep="0.004" integrator="implicitfast" gravity="0 0 -3.71"/>
   <statistic center="0 0 1" extent="45"/>
   <visual><headlight ambient="0.45 0.35 0.3" diffuse="0.55 0.45 0.4" specular="0.05 0.05 0.05"/></visual>
@@ -99,7 +107,8 @@ xml = f'''<mujoco model="rover_mars">
     <mesh name="user_rail" file="user_rail.stl"/>
     <mesh name="top_plate" file="top_plate.stl"/>
     <mesh name="wheel" file="wheel.stl" scale="0.93 1 0.93"/>
-    <material name="regolith" rgba="0.72 0.38 0.2 1"/>
+    <texture name="mars_ground_tex" type="2d" file="mars_ground.png"/>
+    <material name="regolith" texture="mars_ground_tex" texrepeat="34 34" rgba="1 1 1 1"/>
     <material name="rock0" rgba="0.42 0.27 0.2 1"/>
     <material name="rock1" rgba="0.5 0.33 0.24 1"/>
     <material name="rock2" rgba="0.34 0.22 0.17 1"/>
@@ -116,7 +125,7 @@ xml = f'''<mujoco model="rover_mars">
   </asset>
   <worldbody>
     <light name="sun" pos="-20 -10 40" dir="0.5 0.3 -1" diffuse="0.9 0.8 0.7" castshadow="true"/>
-    <geom name="terrain" type="hfield" hfield="mars" friction="0.5 0.01 0.001" group="3"/>
+    <geom name="terrain" type="hfield" hfield="mars" friction="0.75 0.01 0.001" group="3"/>
     <geom type="mesh" mesh="terrain_vis" material="regolith" contype="0" conaffinity="0" group="1"/>
 {chr(10).join(rock_xml)}
     <body name="lander" pos="{LX} {LY} {lz:.3f}">
@@ -147,6 +156,9 @@ xml = f'''<mujoco model="rover_mars">
       <geom type="box" size="0.04 0.285 0.05" pos="-0.47 0 0.06" material="husky_black" contype="0" conaffinity="0" mass="0"/>
       <geom name="chassis_low" type="box" size="0.4937 0.28545 0.0309" pos="0 0 0.0619" mass="0" friction="0.6 0.01 0.001" rgba="0 0 0 0"/>
       <geom name="chassis_top" type="box" size="0.395 0.28545 0.0519" pos="0 0 0.1756" mass="0" friction="0.6 0.01 0.001" rgba="0 0 0 0"/>
+      <geom type="box" size="0.05 0.06 0.045" pos="0.5 0 0.04" material="husky_black" contype="0" conaffinity="0" mass="0"/>
+      <geom type="cylinder" size="0.035 0.02" pos="0.5 0 0.095" material="steel" contype="0" conaffinity="0" mass="0"/>
+      <site name="lidar" pos="0.5 0 0.05" size="0.01"/>
       <site name="bumper" type="box" size="0.52 0.31 0.12" pos="0 0 0.12" rgba="0 0 0 0"/>
       <site name="imu" pos="0.19 0 0.149"/>
 {chr(10).join(wheels)}
@@ -164,7 +176,7 @@ xml = f'''<mujoco model="rover_mars">
 </mujoco>
 '''
 (OUT / "mars.xml").write_text(xml)
-meta = {"half_extent": R, "zmax": ZMAX, "n": N, "lander": LANDER, "start": START, "alpha": SITES["alpha"],
-        "samples": [SITES[f"sample{i}"] for i in range(4)], "craters": CRATERS, "rocks": [[round(float(x), 2), round(float(y), 2), s] for x, y, s, *_ in rocks], "heights": np.round(H, 3).tolist()}
+meta = {"half_extent": R, "zmax": ZMAX, "n": N, "heightmap": "assets/heightmap.png", "lander": LANDER, "start": START, "alpha": SITES["alpha"],
+        "samples": [SITES[f"sample{i}"] for i in range(4)], "craters": CRATERS, "rocks": [[round(float(x), 2), round(float(y), 2), s, round(float(sy), 3), round(float(sz), 3), round(float(yaw), 3)] for x, y, s, sy, sz, yaw in rocks]}
 (OUT / "mission.json").write_text(json.dumps(meta))
 print("wrote mars.xml; rocks", len(rocks), "zmax", H.max())

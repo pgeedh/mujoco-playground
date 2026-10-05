@@ -1,10 +1,9 @@
-<mujoco model="bimanual_franka_stack">
+<mujoco model="biohazard_lab">
   <compiler angle="radian" meshdir="assets" autolimits="true" />
   <option integrator="implicitfast" timestep="0.002" />
-  <statistic center="0 0 0.6" extent="1.4" />
+  <statistic center="0 0 0.6" extent="1.6" />
   <visual>
-    <headlight ambient="0.4 0.4 0.4" diffuse="0.6 0.6 0.6" specular="0.1 0.1 0.1" />
-    <global azimuth="90" elevation="-25" />
+    <headlight ambient="0.35 0.35 0.38" diffuse="0.55 0.55 0.55" specular="0.1 0.1 0.1" />
   </visual>
   <default>
     <default class="panda">
@@ -110,22 +109,74 @@
     <mesh file="hand_4.obj" />
     <mesh file="finger_0.obj" />
     <mesh file="finger_1.obj" />
-    <material name="table_top" rgba="0.62 0.5 0.36 1" />
-    <material name="table_leg" rgba="0.25 0.25 0.28 1" />
-    <material name="cube_red" rgba="0.9 0.2 0.2 1" />
-    <material name="cube_green" rgba="0.2 0.75 0.3 1" />
-    <material name="cube_blue" rgba="0.2 0.4 0.9 1" />
-    <material name="floor" rgba="0.78 0.8 0.82 1" reflectance="0.1" />
+    <material name="floor" rgba="0.62 0.64 0.66 1" />
+    <material name="wall" rgba="0.82 0.86 0.88 1" />
+    <material name="bench" rgba="0.78 0.8 0.82 1" />
+    <material name="bench_leg" rgba="0.28 0.3 0.34 1" />
+    <material name="hazard_y" rgba="1 0.8 0.05 1" />
+    <material name="hazard_k" rgba="0.06 0.06 0.06 1" />
+    <material name="case_red" rgba="0.85 0.12 0.1 1" />
+    <material name="case_in" rgba="0.25 0.05 0.05 1" />
+    <material name="tube" rgba="0.9 0.95 1 0.35" />
+    <material name="cap_red" rgba="0.95 0.12 0.1 1" />
+    <material name="cap_green" rgba="0.15 0.8 0.3 1" />
+    <material name="cap_blue" rgba="0.2 0.4 0.95 1" />
+    <material name="cap_yellow" rgba="1 0.8 0.1 1" />
+    <material name="virus" rgba="0.3 1 0.35 0.8" emission="0.9" />
+    <material name="rack" rgba="0.2 0.24 0.3 1" />
+    <material name="button" rgba="0.9 0.05 0.05 1" emission="0.9" />
+    <material name="button_base" rgba="0.95 0.8 0.1 1" />
+    <material name="sign_k" rgba="0.05 0.05 0.05 1" />
+    <material name="beacon" rgba="1 0.1 0.05 1" emission="0.9" />
+    <material name="spill" rgba="0.35 1 0.4 0.45" />
+    <material name="glass" rgba="0.7 0.85 0.95 0.18" />
+    <material name="panel" rgba="0.15 0.2 0.25 1" />
   </asset>
   <worldbody>
-    <light name="key" pos="0 -0.4 2.2" dir="0 0.2 -1" diffuse="0.7 0.7 0.7" castshadow="true" />
+    <light name="key" pos="0 -0.5 2.4" dir="0 0.2 -1" diffuse="0.8 0.8 0.8" castshadow="true" />
     <geom name="floor" type="plane" size="4 4 0.05" material="floor" />
-    <body name="table" pos="0 0 0">
-      <geom name="table_top" type="box" size="0.75 0.5 0.02" pos="0 0 0.38" material="table_top" friction="1 0.005 0.0001" />
-      <geom name="leg0" type="box" size="0.03 0.03 0.18" pos="-0.68 -0.43 0.18" material="table_leg" />
-      <geom name="leg1" type="box" size="0.03 0.03 0.18" pos="0.68 -0.43 0.18" material="table_leg" />
-      <geom name="leg2" type="box" size="0.03 0.03 0.18" pos="-0.68 0.43 0.18" material="table_leg" />
-      <geom name="leg3" type="box" size="0.03 0.03 0.18" pos="0.68 0.43 0.18" material="table_leg" />
+    <geom type="box" size="2.2 0.05 1.3" pos="0 1.25 1.3" material="wall" contype="0" conaffinity="0" />
+    <geom type="box" size="0.05 1.4 1.3" pos="-2.2 -0.1 1.3" material="wall" contype="0" conaffinity="0" />
+    <geom type="box" size="0.05 1.4 1.3" pos="2.2 -0.1 1.3" material="wall" contype="0" conaffinity="0" />
+    <geom type="box" size="0.1 0.5 0.003" pos="-1.7 0.0 0.003" material="hazard_y" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="-1.5 0.0 0.003" material="hazard_k" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="-1.2999999999999998 0.0 0.003" material="hazard_y" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="-1.0999999999999999 0.0 0.003" material="hazard_k" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="-0.8999999999999999 0.0 0.003" material="hazard_y" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="-0.7 0.0 0.003" material="hazard_k" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="-0.4999999999999998 0.0 0.003" material="hazard_y" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="-0.2999999999999998 0.0 0.003" material="hazard_k" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="-0.09999999999999987 0.0 0.003" material="hazard_y" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="0.10000000000000009 0.0 0.003" material="hazard_k" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="0.30000000000000004 0.0 0.003" material="hazard_y" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="0.5000000000000002 0.0 0.003" material="hazard_k" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="0.7000000000000004 0.0 0.003" material="hazard_y" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="0.9000000000000001 0.0 0.003" material="hazard_k" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="1.1000000000000003 0.0 0.003" material="hazard_y" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="1.3 0.0 0.003" material="hazard_k" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="1.5000000000000002 0.0 0.003" material="hazard_y" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="box" size="0.1 0.5 0.003" pos="1.7000000000000004 0.0 0.003" material="hazard_k" contype="0" conaffinity="0" euler="0 0 0.5" />
+    <geom type="cylinder" size="0.62 0.012" pos="0.0 1.2 1.45" euler="1.5708 0 0" material="hazard_y" contype="0" conaffinity="0" />
+    <geom type="cylinder" size="0.22 0.012" pos="1.653273178848927e-17 1.185 1.72" euler="1.5708 0 0" material="sign_k" contype="0" conaffinity="0" />
+    <geom type="cylinder" size="0.16 0.012" pos="1.653273178848927e-17 1.18 1.72" euler="1.5708 0 0" material="hazard_y" contype="0" conaffinity="0" />
+    <geom type="cylinder" size="0.22 0.012" pos="-0.23382685902179845 1.185 1.315" euler="1.5708 0 0" material="sign_k" contype="0" conaffinity="0" />
+    <geom type="cylinder" size="0.16 0.012" pos="-0.23382685902179845 1.18 1.315" euler="1.5708 0 0" material="hazard_y" contype="0" conaffinity="0" />
+    <geom type="cylinder" size="0.22 0.012" pos="0.23382685902179837 1.185 1.315" euler="1.5708 0 0" material="sign_k" contype="0" conaffinity="0" />
+    <geom type="cylinder" size="0.16 0.012" pos="0.23382685902179837 1.18 1.315" euler="1.5708 0 0" material="hazard_y" contype="0" conaffinity="0" />
+    <geom type="cylinder" size="0.1 0.012" pos="0.0 1.185 1.45" euler="1.5708 0 0" material="sign_k" contype="0" conaffinity="0" />
+    <geom type="cylinder" size="0.05 0.012" pos="0.0 1.18 1.45" euler="1.5708 0 0" material="hazard_y" contype="0" conaffinity="0" />
+    <geom type="box" size="0.9 0.02 0.45" pos="-1.2 0.9 1.0" material="glass" contype="0" conaffinity="0" />
+    <geom type="box" size="0.9 0.02 0.45" pos="1.2 0.9 1.0" material="glass" contype="0" conaffinity="0" />
+    <body name="beacon" pos="-1.0 0.55 0.0">
+      <geom type="cylinder" size="0.025 0.55" pos="0 0 0.55" material="bench_leg" contype="0" conaffinity="0" />
+      <geom type="sphere" size="0.07" pos="0 0 1.15" material="beacon" contype="0" conaffinity="0" />
+    </body>
+    <body name="bench" pos="0 0 0">
+      <geom name="bench_top" type="box" size="0.95 0.5 0.02" pos="0 0 0.38" material="bench" friction="1 0.005 0.0001" />
+      <geom type="box" size="0.03 0.03 0.18" pos="-0.88 -0.43 0.18" material="bench_leg" />
+      <geom type="box" size="0.03 0.03 0.18" pos="0.88 -0.43 0.18" material="bench_leg" />
+      <geom type="box" size="0.03 0.03 0.18" pos="-0.88 0.43 0.18" material="bench_leg" />
+      <geom type="box" size="0.03 0.03 0.18" pos="0.88 0.43 0.18" material="bench_leg" />
     </body>
     <body name="l_link0" childclass="panda" pos="-0.38 -0.42 0.4" quat="0.7071068 0 0 0.7071068">
       <inertial mass="0.629769" pos="-0.041018 -0.00014 0.049974" fullinertia="0.00315 0.00388 0.004285 8.2904e-7 0.00015 8.2299e-6" />
@@ -375,17 +426,67 @@
         </body>
       </body>
     </body>
-    <body name="cubeA" pos="-0.12 0.12 0.43">
-      <freejoint name="cubeA_joint" />
-      <geom name="cubeA_geom" type="box" size="0.025 0.025 0.025" mass="0.08" material="cube_red" friction="1.2 0.01 0.001" condim="4" solimp="0.95 0.99 0.001" solref="0.004 1" />
+    <body name="rack" pos="-0.6 0.12 0.4">
+      <geom type="box" size="0.09 0.19 0.006" pos="0 0 0.006" material="rack" />
+      <geom type="box" size="0.07 0.003 0.001" pos="0 -0.142 0.013" material="rack" />
+      <geom type="box" size="0.07 0.003 0.001" pos="0 -0.098 0.013" material="rack" />
+      <geom type="box" size="0.07 0.003 0.001" pos="0 -0.06199999999999999 0.013" material="rack" />
+      <geom type="box" size="0.07 0.003 0.001" pos="0 -0.017999999999999995 0.013" material="rack" />
+      <geom type="box" size="0.07 0.003 0.001" pos="0 0.01800000000000001 0.013" material="rack" />
+      <geom type="box" size="0.07 0.003 0.001" pos="0 0.062000000000000006 0.013" material="rack" />
+      <geom type="box" size="0.07 0.003 0.001" pos="0 0.098 0.013" material="rack" />
+      <geom type="box" size="0.07 0.003 0.001" pos="0 0.142 0.013" material="rack" />
     </body>
-    <body name="cubeB" pos="0.12 0.12 0.43">
-      <freejoint name="cubeB_joint" />
-      <geom name="cubeB_geom" type="box" size="0.025 0.025 0.025" mass="0.08" material="cube_green" friction="1.2 0.01 0.001" condim="4" solimp="0.95 0.99 0.001" solref="0.004 1" />
+    <body name="spill" pos="-0.78 0.34 0">
+      <geom type="cylinder" size="0.06 0.0015" pos="0 0 0.4015" material="spill" contype="0" conaffinity="0" />
     </body>
-    <body name="cubeC" pos="0.0 0.3 0.43">
-      <freejoint name="cubeC_joint" />
-      <geom name="cubeC_geom" type="box" size="0.025 0.025 0.025" mass="0.08" material="cube_blue" friction="1.2 0.01 0.001" condim="4" solimp="0.95 0.99 0.001" solref="0.004 1" />
+    <body name="tube0" pos="-0.6 0.0 0.42260000000000003">
+      <freejoint name="tube0_joint" />
+      <geom name="tube0_geom" type="cylinder" size="0.016 0.06" euler="0 1.5708 0" material="tube" mass="0.015" friction="1.6 0.15 0.01" condim="6" solimp="0.97 0.995 0.0005" solref="0.003 1" />
+      <geom type="cylinder" size="0.013000000000000001 0.048" pos="-0.006 0 0" euler="0 1.5708 0" material="virus" contype="0" conaffinity="0" mass="0" />
+      <geom name="tube0_cap" type="cylinder" size="0.0175 0.009" pos="0.063 0 0" euler="0 1.5708 0" material="cap_red" mass="0.004" friction="1.6 0.05 0.005" />
+    </body>
+    <body name="tube1" pos="-0.6 0.08 0.42260000000000003">
+      <freejoint name="tube1_joint" />
+      <geom name="tube1_geom" type="cylinder" size="0.016 0.06" euler="0 1.5708 0" material="tube" mass="0.015" friction="1.6 0.15 0.01" condim="6" solimp="0.97 0.995 0.0005" solref="0.003 1" />
+      <geom type="cylinder" size="0.013000000000000001 0.048" pos="-0.006 0 0" euler="0 1.5708 0" material="virus" contype="0" conaffinity="0" mass="0" />
+      <geom name="tube1_cap" type="cylinder" size="0.0175 0.009" pos="0.063 0 0" euler="0 1.5708 0" material="cap_red" mass="0.004" friction="1.6 0.05 0.005" />
+    </body>
+    <body name="tube2" pos="-0.6 0.16 0.42260000000000003">
+      <freejoint name="tube2_joint" />
+      <geom name="tube2_geom" type="cylinder" size="0.016 0.06" euler="0 1.5708 0" material="tube" mass="0.015" friction="1.6 0.15 0.01" condim="6" solimp="0.97 0.995 0.0005" solref="0.003 1" />
+      <geom type="cylinder" size="0.013000000000000001 0.048" pos="-0.006 0 0" euler="0 1.5708 0" material="virus" contype="0" conaffinity="0" mass="0" />
+      <geom name="tube2_cap" type="cylinder" size="0.0175 0.009" pos="0.063 0 0" euler="0 1.5708 0" material="cap_red" mass="0.004" friction="1.6 0.05 0.005" />
+    </body>
+    <body name="tube3" pos="-0.6 0.24 0.42260000000000003">
+      <freejoint name="tube3_joint" />
+      <geom name="tube3_geom" type="cylinder" size="0.016 0.06" euler="0 1.5708 0" material="tube" mass="0.015" friction="1.6 0.15 0.01" condim="6" solimp="0.97 0.995 0.0005" solref="0.003 1" />
+      <geom type="cylinder" size="0.013000000000000001 0.048" pos="-0.006 0 0" euler="0 1.5708 0" material="virus" contype="0" conaffinity="0" mass="0" />
+      <geom name="tube3_cap" type="cylinder" size="0.0175 0.009" pos="0.063 0 0" euler="0 1.5708 0" material="cap_green" mass="0.004" friction="1.6 0.05 0.005" />
+    </body>
+    <body name="airlock" pos="0.0 0.14 0.4">
+      <geom type="box" size="0.11 0.10 0.005" pos="0 0 0.005" material="panel" />
+      <geom type="box" size="0.11 0.004 0.006" pos="0 0.096 0.011" material="hazard_y" />
+      <geom type="box" size="0.11 0.004 0.006" pos="0 -0.096 0.011" material="hazard_y" />
+      <geom type="box" size="0.004 0.10 0.006" pos="0.106 0 0.011" material="hazard_y" />
+      <geom type="box" size="0.004 0.10 0.006" pos="-0.106 0 0.011" material="hazard_y" />
+      <geom type="box" size="0.11 0.10 0.0012" pos="0 0 0.0105" material="virus" contype="0" conaffinity="0" />
+    </body>
+    <body name="case" pos="0.6 0.16 0.4">
+      <geom type="box" size="0.115 0.075 0.006" pos="0 0 0.006" material="case_red" />
+      <geom type="box" size="0.115 0.006 0.045" pos="0 0.069 0.045" material="case_red" />
+      <geom type="box" size="0.115 0.006 0.045" pos="0 -0.069 0.045" material="case_red" />
+      <geom type="box" size="0.006 0.075 0.045" pos="0.109 0 0.045" material="case_red" />
+      <geom type="box" size="0.006 0.075 0.045" pos="-0.109 0 0.045" material="case_red" />
+      <geom type="box" size="0.10 0.062 0.003" pos="0 0 0.0135" material="case_in" contype="0" conaffinity="0" />
+      <geom type="cylinder" size="0.032 0.002" pos="0 0.0 0.0135" material="hazard_y" contype="0" conaffinity="0" />
+    </body>
+    <body name="button_base" pos="0.6 -0.06 0.4">
+      <geom type="cylinder" size="0.036 0.008" pos="0 0 0.008" material="button_base" />
+    </body>
+    <body name="seal_button" pos="0.6 -0.06 0.42800000000000005">
+      <joint name="seal_slide" type="slide" axis="0 0 1" range="-0.022 0" stiffness="250" damping="8" />
+      <geom name="seal_geom" type="cylinder" size="0.026 0.012" material="button" mass="0.05" />
     </body>
   </worldbody>
   <tendon>
@@ -405,6 +506,7 @@
   <contact>
     <exclude body1="l_link0" body2="l_link1" />
     <exclude body1="r_link0" body2="r_link1" />
+    <exclude body1="button_base" body2="seal_button" />
   </contact>
   <actuator>
     <general class="panda" name="l_actuator1" joint="l_joint1" gainprm="4500" biasprm="0 -4500 -450" />
@@ -414,7 +516,7 @@
     <general class="panda" name="l_actuator5" joint="l_joint5" gainprm="2000" biasprm="0 -2000 -200" forcerange="-12 12" />
     <general class="panda" name="l_actuator6" joint="l_joint6" gainprm="2000" biasprm="0 -2000 -200" forcerange="-12 12" ctrlrange="-0.0175 3.7525" />
     <general class="panda" name="l_actuator7" joint="l_joint7" gainprm="2000" biasprm="0 -2000 -200" forcerange="-12 12" />
-    <general class="panda" name="l_actuator8" tendon="l_split" forcerange="-100 100" ctrlrange="0 255" gainprm="0.01568627451 0 0" biasprm="0 -100 -10" />
+    <general class="panda" name="l_actuator8" tendon="l_split" forcerange="-100 100" ctrlrange="0 255" gainprm="0.1882 0 0" biasprm="0 -1200 -120" />
     <general class="panda" name="r_actuator1" joint="r_joint1" gainprm="4500" biasprm="0 -4500 -450" />
     <general class="panda" name="r_actuator2" joint="r_joint2" gainprm="4500" biasprm="0 -4500 -450" ctrlrange="-1.7628 1.7628" />
     <general class="panda" name="r_actuator3" joint="r_joint3" gainprm="3500" biasprm="0 -3500 -350" />
@@ -422,9 +524,9 @@
     <general class="panda" name="r_actuator5" joint="r_joint5" gainprm="2000" biasprm="0 -2000 -200" forcerange="-12 12" />
     <general class="panda" name="r_actuator6" joint="r_joint6" gainprm="2000" biasprm="0 -2000 -200" forcerange="-12 12" ctrlrange="-0.0175 3.7525" />
     <general class="panda" name="r_actuator7" joint="r_joint7" gainprm="2000" biasprm="0 -2000 -200" forcerange="-12 12" />
-    <general class="panda" name="r_actuator8" tendon="r_split" forcerange="-100 100" ctrlrange="0 255" gainprm="0.01568627451 0 0" biasprm="0 -100 -10" />
+    <general class="panda" name="r_actuator8" tendon="r_split" forcerange="-100 100" ctrlrange="0 255" gainprm="0.1882 0 0" biasprm="0 -1200 -120" />
   </actuator>
   <keyframe>
-    <key name="home" qpos="0 0 0 -1.57079 0 1.57079 -0.7853 0.04 0.04 0 0 0 -1.57079 0 1.57079 -0.7853 0.04 0.04 -0.12 0.12 0.43 1 0 0 0 0.12 0.12 0.43 1 0 0 0 0.0 0.3 0.43 1 0 0 0" ctrl="0 0 0 -1.57079 0 1.57079 -0.7853 255 0 0 0 -1.57079 0 1.57079 -0.7853 255" />
+    <key name="home" qpos="0 0 0 -1.57079 0 1.57079 -0.7853 0.04 0.04 0 0 0 -1.57079 0 1.57079 -0.7853 0.04 0.04 -0.6 0.0 0.42260000000000003 1 0 0 0 -0.6 0.08 0.42260000000000003 1 0 0 0 -0.6 0.16 0.42260000000000003 1 0 0 0 -0.6 0.24 0.42260000000000003 1 0 0 0 0" ctrl="0 0 0 -1.57079 0 1.57079 -0.7853 255 0 0 0 -1.57079 0 1.57079 -0.7853 255" />
   </keyframe>
 </mujoco>

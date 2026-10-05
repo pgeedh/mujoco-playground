@@ -437,7 +437,7 @@
 
   <actuator>
     <!-- Legs are torque motors, not position servos: matches g1.xml (see
-         web/src/g1Control.js) — the pretrained walking policy expects
+         web/src/robots/g1/controller.js) — the pretrained walking policy expects
          explicit kp/kd PD control it computes itself, not MuJoCo's
          built-in position-actuator gains. -->
     <motor class="g1" name="left_hip_pitch_joint" joint="left_hip_pitch_joint"/>

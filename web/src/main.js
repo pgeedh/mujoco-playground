@@ -4,11 +4,13 @@ import { GUI              } from '../node_modules/three/examples/jsm/libs/lil-gu
 import { OrbitControls    } from '../node_modules/three/examples/jsm/controls/OrbitControls.js';
 import { DragStateManager } from './utils/DragStateManager.js';
 import { setupGUI, loadSceneFromURL, drawTendonsAndFlex, getPosition, getQuaternion, toMujocoPos, standardNormal } from './mujocoUtils.js';
-import { downloadScene } from './sceneLoader.js';
-import { ENVS, envById } from './envs.js';
-import { Bench } from './bench.js';
-import { loadWorld } from './worlds.js';
-import { initMenu } from './menu.js';
+import { downloadScene } from './core/sceneLoader.js';
+import { ENVS, envById } from './core/envs.js';
+import { Bench } from './core/bench.js';
+import { Storyboard } from './core/briefing.js';
+import { storyFor } from './core/stories.js';
+import { loadWorld } from './core/worlds.js';
+import { initMenu } from './core/menu.js';
 import   load_mujoco        from '../node_modules/@mujoco/mujoco/mujoco.js';
 
 // Load the MuJoCo Module
@@ -37,6 +39,8 @@ export class MuJoCoDemo {
     this.env = null;
     this._controllers = {};
     this.bench = new Bench();
+    this.storyboard = new Storyboard(this);
+    this._seen = new Set();
 
     // Define Random State Variables
     this.params = { scene: initialScene, paused: false, help: false, ctrlnoiserate: 0.0, ctrlnoisestd: 0.0, keyframeNumber: 0 };
@@ -203,6 +207,16 @@ export class MuJoCoDemo {
     this.mujoco_time = performance.now();
   }
 
+  /** Plays the mission's storyboard (once per session per mission, or on demand with B). */
+  async playStory(force = false) {
+    const skip = new URLSearchParams(location.search).has('skipstory');
+    if (!this.env || (!force && (skip || this._seen.has(this.env.id)))) return;
+    this._seen.add(this.env.id);
+    const wasPaused = this.params.paused; this.params.paused = true;
+    await this.storyboard.play(storyFor(this.env, this.controller));
+    this.params.paused = wasPaused;
+  }
+
   onWindowResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
@@ -350,6 +364,12 @@ export class MuJoCoDemo {
   }
 }
 
+// B replays the story briefing of the current mission.
+window.addEventListener('keydown', (e) => {
+  const menu = document.getElementById('menu');
+  if (e.code === 'KeyB' && !e.repeat && menu && menu.hidden && window.demo && window.demo.env && !window.demo.storyboard.active) window.demo.playStory(true);
+});
+
 // Game keys must not scroll the page (matters most inside an iframe).
 window.addEventListener('keydown', (e) => {
   const menu = document.getElementById('menu');
@@ -370,6 +390,7 @@ initMenu({
       setLoading(true, envById(id).name);
       try { await demo.loadEnv(id); } finally { setLoading(false); }
     } else demo.bench.reset(demo.bench.seed);
+    await demo.playStory();
     demo.mujoco_time = performance.now();
     demo.params.paused = false;
   },
