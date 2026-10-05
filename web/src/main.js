@@ -6,6 +6,7 @@ import { DragStateManager } from './utils/DragStateManager.js';
 import { setupGUI, loadSceneFromURL, drawTendonsAndFlex, getPosition, getQuaternion, toMujocoPos, standardNormal } from './mujocoUtils.js';
 import { G1_PARK_SCENE, downloadG1ParkScene } from './g1Scene.js';
 import { G1Controller } from './g1Control.js';
+import { initMenu } from './menu.js';
 import   load_mujoco        from '../node_modules/@mujoco/mujoco/mujoco.js';
 
 // Load the MuJoCo Module
@@ -48,7 +49,7 @@ export class MuJoCoDemo {
 
     this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.001, 100 );
     this.camera.name = 'PerspectiveCamera';
-    this.camera.position.set(2.0, 1.7, 1.7);
+    this.camera.position.set(-2.2, 1.5, 1.8); // behind the robot so the course ahead is in view
     this.scene.add(this.camera);
     // The camera looks down local -Z by default; this model's forward
     // (the direction it walks under W) is local +X, so first-person mode
@@ -291,3 +292,11 @@ export class MuJoCoDemo {
 let demo = new MuJoCoDemo();
 window.demo = demo; // for console debugging
 await demo.init();
+
+// Hold the sim paused behind the robot-select screen; picking a robot
+// starts it, and Esc re-opens the menu (paused again).
+demo.params.paused = true;
+initMenu({
+  onStart: () => { demo.mujoco_time = performance.now(); demo.params.paused = false; },
+  onOpen:  () => { demo.params.paused = true; },
+});

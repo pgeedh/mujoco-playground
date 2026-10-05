@@ -1,4 +1,15 @@
-# humanoid-mujoco
+# mujoco-playground
+
+Pick a robot and play it in your browser: real MuJoCo physics (WebAssembly)
+in a free-roam park sandbox. Controls: **W A S D** move, **Space** jump,
+**Q / E** grab with the right / left hand, **C** camera, **Esc** back to the
+robot select screen.
+
+| Robot | Status |
+|---|---|
+| Unitree G1 humanoid | Playable (real pretrained walking policy) |
+| Unitree Go2 quadruped | Coming soon (no public pretrained policy yet) |
+| Micro Duck | Coming soon |
 
 A real Unitree G1 humanoid, simulated in real MuJoCo physics compiled to
 WebAssembly, running entirely client-side in the browser — driven by an
@@ -37,9 +48,10 @@ deploy as a static site (Vercel/Render).
   (glued to the torso, looking the way it's facing) — this part's just
   normal Three.js camera work, nothing ML-related.
 
-## The task
+## Sandbox and optional goal
 
-Load 3 plates into the dishwasher. Plates start stacked on a counter right
+The park is a free-roam sandbox: grab plates, balls and crates with Q / E.
+The original goal is still there if you want one: load 3 plates into the dishwasher. Plates start stacked on a counter right
 in front of spawn; the dishwasher is a short walk further down the path.
 Carry them over with Q (right hand) / E (left hand) — one at a time is more
 reliable than two at once (see rough edges below). Progress is shown
@@ -113,6 +125,9 @@ python scripts/export_policy.py /tmp/unitree_rl_gym/deploy/pre_train/g1/motion.p
   this scene the robot walks near is deliberately non-colliding
   (`contype`/`conaffinity` 0, or a separate group like the counter/plates)
   for exactly this reason. Worth remembering if you add new scene geometry.
-- No deployment config yet for Vercel/Render — the `web/` app is static
-  once `npm install` has vendored its dependencies, so any static host
-  works, but nothing's wired up yet.
+## Deploying (Vercel)
+
+The repo-root `vercel.json` builds `web/` (and `web/vercel.json` covers the case where the project's Root Directory is set to `web`). The build runs
+`npm run build` (`web/scripts/build.mjs`), which copies the runtime
+dependencies out of `node_modules` into `web/dist/`, served as a static site.
+Test locally with `cd web && npm install && npm run build && cd dist && python3 -m http.server 8080`.
