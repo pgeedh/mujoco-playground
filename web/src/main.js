@@ -4,8 +4,10 @@ import { GUI              } from '../node_modules/three/examples/jsm/libs/lil-gu
 import { OrbitControls    } from '../node_modules/three/examples/jsm/controls/OrbitControls.js';
 import { DragStateManager } from './utils/DragStateManager.js';
 import { setupGUI, loadSceneFromURL, drawTendonsAndFlex, getPosition, getQuaternion, toMujocoPos, standardNormal } from './mujocoUtils.js';
-import { G1_PARK_SCENE, downloadG1ParkScene } from './g1Scene.js';
-import { G1Controller } from './g1Control.js';
+import { downloadScene } from './sceneLoader.js';
+import { ENVS, envById } from './envs.js';
+import { Bench } from './bench.js';
+import { loadWorld } from './worlds.js';
 import { initMenu } from './menu.js';
 import   load_mujoco        from '../node_modules/@mujoco/mujoco/mujoco.js';
 
@@ -21,7 +23,7 @@ const mujoco = await load_mujoco({
 // mesh assets, so it can't be loaded synchronously like the demo's
 // single-file humanoid.xml — model/data stay null until init() finishes
 // downloading everything and calls loadSceneFromURL.
-var initialScene = G1_PARK_SCENE;
+var initialScene = ENVS[0].scene;
 mujoco.FS.mkdir('/working');
 mujoco.FS.mount(mujoco.MEMFS, { root: '.' }, '/working');
 
@@ -31,7 +33,10 @@ export class MuJoCoDemo {
 
     this.model = null;
     this.data  = null;
-    this.g1Controller = new G1Controller();
+    this.controller = null;
+    this.env = null;
+    this._controllers = {};
+    this.bench = new Bench();
 
     // Define Random State Variables
     this.params = { scene: initialScene, paused: false, help: false, ctrlnoiserate: 0.0, ctrlnoisestd: 0.0, keyframeNumber: 0 };
@@ -110,58 +115,92 @@ export class MuJoCoDemo {
     // Initialize the Drag State Manager.
     this.dragStateManager = new DragStateManager(this.scene, this.renderer, this.camera, this.container.parentElement, this.controls);
 
-    // C toggles third-person (free orbit camera) vs first-person (glued to
-    // the robot's head, looking the way it's facing).
+    // C cycles camera modes (env-specific): G1 = orbit/first-person, rover =
+    // chase/free orbit, Franka = a few fixed viewpoints.
     this.cameraMode = 'third';
-    this._prevKeyC = false;
+    this._camIndex = 0;
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'KeyC' && !this._prevKeyC) {
+      if (e.code !== 'KeyC' || e.repeat || !this.env) return;
+      const modes = this.env.camModes;
+      if (modes === 'fpv') {
         if (this.cameraMode === 'third') {
-          // Leaving third-person: remember exactly where the orbit camera
-          // was so switching back restores it, instead of OrbitControls
-          // re-syncing its orbit radius from wherever first-person left
-          // the camera (which produced a bizarre inside-the-chest close-up).
           this._savedThirdPersonPos = this.camera.position.clone();
           this._savedThirdPersonQuat = this.camera.quaternion.clone();
-          this.cameraMode = 'first';
-          this.controls.enabled = false;
+          this.cameraMode = 'first'; this.controls.enabled = false;
         } else {
           this.cameraMode = 'third';
-          if (this._savedThirdPersonPos) {
-            this.camera.position.copy(this._savedThirdPersonPos);
-            this.camera.quaternion.copy(this._savedThirdPersonQuat);
-          }
-          this.controls.enabled = true;
-          this.controls.update();
+          if (this._savedThirdPersonPos) { this.camera.position.copy(this._savedThirdPersonPos); this.camera.quaternion.copy(this._savedThirdPersonQuat); }
+          this.controls.enabled = true; this.controls.update();
         }
+      } else if (modes === 'chase') {
+        this.cameraMode = this.cameraMode === 'chase' ? 'third' : 'chase';
+        this.controls.enabled = this.cameraMode === 'third';
+      } else if (Array.isArray(modes)) {
+        this._camIndex = (this._camIndex + 1) % modes.length;
+        this._setView(modes[this._camIndex]);
       }
-      if (e.code === 'KeyC') this._prevKeyC = true;
     });
-    window.addEventListener('keyup', (e) => { if (e.code === 'KeyC') this._prevKeyC = false; });
+  }
+
+  _setView(v) {
+    this.camera.position.set(...v.pos);
+    this.controls.target.set(...v.target);
+    this.controls.update();
   }
 
   async init() {
-    // Download our G1 + obstacles scene (model XML + meshes) to MuJoCo's virtual file system
-    await downloadG1ParkScene(mujoco);
-
-    // Initialize the three.js Scene using the .xml Model in initialScene
-    [this.model, this.data, this.bodies, this.lights] =
-      await loadSceneFromURL(mujoco, initialScene, this);
-
-    // loadSceneFromURL never runs forward kinematics, so data.xpos for every
-    // body reads as [0,0,0] until the first mj_step/mj_forward — without
-    // this, the very first delivery-distance check would see every body
-    // (props included) as coincident at the origin and instantly (and
-    // sticky-ly) mark them delivered.
-    mujoco.mj_forward(this.model, this.data);
-
-    this.g1Controller.bindModel(this.model, mujoco);
-    await this.g1Controller.load();
-
-    this.torsoBodyId = mujoco.mj_name2id(this.model, mujoco.mjtObj.mjOBJ_BODY.value, "torso_link");
-
+    // ?embed=1: used when the game sits inside an iframe on another page. Load nothing
+    // until a mission is picked (saves the visitor ~35 MB) and stop game keys scrolling the host page.
+    this.embed = new URLSearchParams(location.search).has('embed');
+    if (this.embed) { document.body.classList.add('embed'); return; }
+    await this.loadEnv(ENVS[0].id);
     this.gui = new GUI();
     setupGUI(this);
+    // The lil-gui debug panel is hidden unless the page is opened with ?debug
+    if (!new URLSearchParams(location.search).has('debug')) this.gui.domElement.style.display = 'none';
+  }
+
+  /** Load (or switch to) one environment: scene files, model, controller, camera, HUD. */
+  async loadEnv(id) {
+    const env = envById(id);
+    this.params.paused = true;
+    this.bench.hide();
+    if (this.controller && this.controller.dispose) this.controller.dispose();
+    // Nothing may touch the old controller/model while the new one loads.
+    this.controller = null;
+    this.env = null;
+    if (this.mujocoRoot) { this.scene.remove(this.mujocoRoot); this.mujocoRoot = null; }
+    await downloadScene(mujoco, env.dir);
+    [this.model, this.data, this.bodies, this.lights] = await loadSceneFromURL(mujoco, env.scene, this);
+    // loadSceneFromURL never runs forward kinematics; without this every body
+    // reads as [0,0,0] until the first step.
+    mujoco.mj_forward(this.model, this.data);
+    this.params.scene = env.scene;
+    const controller = this._controllers[id] || (this._controllers[id] = env.make());
+    controller.bindModel(this.model, mujoco, this);
+    if (!controller.ready) await controller.load();
+    this.env = env;
+    this.controller = controller;
+    this.torsoBodyId = id === 'g1' ? mujoco.mj_name2id(this.model, mujoco.mjtObj.mjOBJ_BODY.value, "torso_link") : -1;
+
+    this.scene.background = new THREE.Color(...env.sky);
+    this.scene.fog = env.fog ? new THREE.Fog(new THREE.Color(env.fog[0], env.fog[1], env.fog[2]), env.fog[3], env.fog[4])
+                             : new THREE.Fog(this.scene.background, 15, 25.5);
+    // Per-environment light levels (Mars needs a strong ambient + a low sun for relief).
+    this.ambientLight.intensity = env.ambient ?? 0.1 * 3.14;
+    if (!this.sunLight) { this.sunLight = new THREE.DirectionalLight(0xffe2c4, 1); this.scene.add(this.sunLight); this.scene.add(this.sunLight.target); }
+    this.sunLight.intensity = env.sun ?? 0;
+    this.cameraMode = env.camModes === 'chase' ? 'chase' : 'third';
+    this.controls.enabled = this.cameraMode !== 'chase';
+    this._camIndex = 0;
+    this._setView(env.camera);
+    const help = document.getElementById('help-keys');
+    if (help) help.innerHTML = env.help;
+    const mission = document.getElementById('mission-line');
+    if (mission) mission.textContent = 'Mission: ' + env.mission;
+    await loadWorld(this, id);
+    this.bench.attach(env, this.controller, () => this.data);
+    this.mujoco_time = performance.now();
   }
 
   onWindowResize() {
@@ -171,9 +210,9 @@ export class MuJoCoDemo {
   }
 
   render(timeMS) {
-    if (!this.model || !this.data || !this.g1Controller.ready) { return; }
+    if (!this.model || !this.data || !this.controller || !this.controller.ready) { return; }
     if (this.cameraMode === 'third') { this.controls.update(); }
-    this.g1Controller.update(this.data);
+    this.controller.update(this.data);
 
     if (!this.params["paused"]) {
       let timestep = this.model.opt.timestep;
@@ -213,8 +252,9 @@ export class MuJoCoDemo {
           // TODO: Apply pose perturbations (mocap bodies only).
         }
 
-        this.g1Controller.beforeStep(this.data, timestep);
+        this.controller.beforeStep(this.data, timestep);
         mujoco.mj_step(this.model, this.data);
+        this.bench.step(timestep);
 
         this.mujoco_time += timestep * 1000.0;
       }
@@ -272,6 +312,25 @@ export class MuJoCoDemo {
       this.camera.quaternion.copy(torsoQuat).multiply(this._fpvCorrection);
     }
 
+    // Rover chase camera: behind and above, smoothed.
+    if (this.cameraMode === 'chase' && this.controller.chaseTarget) {
+      const t = this.controller.chaseTarget(this.data);
+      const back = 5.0, up = 2.6;
+      const cx = t.x - Math.cos(t.yaw) * back, cy = t.y - Math.sin(t.yaw) * back, cz = t.z + up;
+      const want = new THREE.Vector3(cx, cz, -cy), look = new THREE.Vector3(t.x, t.z + 0.4, -t.y);
+      if (!this._chasePos) { this._chasePos = want.clone(); this._chaseLook = look.clone(); }
+      this._chasePos.lerp(want, 0.08); this._chaseLook.lerp(look, 0.15);
+      this.camera.position.copy(this._chasePos); this.camera.lookAt(this._chaseLook);
+    }
+
+    if (this.env && this.env.id === 'rover' && this.controller.chaseTarget) {
+      const t = this.controller.chaseTarget(this.data);
+      this.spotlight.position.set(t.x + 6, t.z + 14, -t.y + 6);
+      this.spotlight.target.position.set(t.x, t.z, -t.y);
+      this.sunLight.position.set(t.x + 30, t.z + 14, -t.y - 10);   // low sun from one side so slopes read
+      this.sunLight.target.position.set(t.x, t.z, -t.y);
+    }
+
     // Update light transforms.
     for (let l = 0; l < this.model.nlight; l++) {
       if (this.lights[l]) {
@@ -284,10 +343,19 @@ export class MuJoCoDemo {
     // Draw Tendons and Flex verts
     drawTendonsAndFlex(this.mujocoRoot, this.model, this.data);
 
+    this.bench.tick();
+
     // Render!
     this.renderer.render( this.scene, this.camera );
   }
 }
+
+// Game keys must not scroll the page (matters most inside an iframe).
+window.addEventListener('keydown', (e) => {
+  const menu = document.getElementById('menu');
+  if (menu && !menu.hidden) return;   // the menu keeps normal keyboard behaviour
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
+});
 
 let demo = new MuJoCoDemo();
 window.demo = demo; // for console debugging
@@ -297,6 +365,13 @@ await demo.init();
 // starts it, and Esc re-opens the menu (paused again).
 demo.params.paused = true;
 initMenu({
-  onStart: () => { demo.mujoco_time = performance.now(); demo.params.paused = false; },
-  onOpen:  () => { demo.params.paused = true; },
+  onStart: async (id, setLoading) => {
+    if (!demo.env || demo.env.id !== id) {
+      setLoading(true, envById(id).name);
+      try { await demo.loadEnv(id); } finally { setLoading(false); }
+    } else demo.bench.reset(demo.bench.seed);
+    demo.mujoco_time = performance.now();
+    demo.params.paused = false;
+  },
+  onOpen:  () => { demo.params.paused = true; demo.bench.hide(); if (demo.controller && demo.controller.map) demo.controller.map.hide(); },
 });

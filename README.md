@@ -2,25 +2,66 @@
 
 **Play it:** https://mujoco-playground-alpha.vercel.app
 
-Pick a robot and play it in your browser: real MuJoCo physics (WebAssembly)
-in a free-roam park sandbox. Controls: **W A S D** move, **Space** jump,
-**Q / E** grab with the right / left hand, **C** camera, **Esc** back to the
-robot select screen.
+Three robots, three missions, real MuJoCo physics (WebAssembly) in your browser.
+Every run is timed and scored, so it doubles as a small manipulation / locomotion /
+navigation benchmark.
 
-| Robot | Status |
-|---|---|
-| Unitree G1 humanoid | Playable (real pretrained walking policy) |
-| Unitree Go2 quadruped | Coming soon (no public pretrained policy yet) |
-| Micro Duck | Coming soon |
+| Robot | Mission | Controls |
+|---|---|---|
+| **Unitree G1** humanoid | Dishwasher loading: carry 3 plates down the path | W A S D walk, Space jump, Q / E grab, C camera |
+| **Bimanual Franka** (2x Panda) | Cube stacking: red on green, then blue on top | Tab switch arm, W A S D / R F move gripper, Q E wrist, Space gripper |
+| **Clearpath Husky on Mars** | Sample return: survey beacon, collect the sample, return to the lander | W S drive, A D steer, hold E to collect, M map, C camera |
 
-A real Unitree G1 humanoid, simulated in real MuJoCo physics compiled to
-WebAssembly, running entirely client-side in the browser — driven by an
-actual pretrained walking policy, not scripted animation.
+**Esc** returns to the mission select. Add `?seed=N` to the URL (or press **New seed**)
+for a different scenario.
 
-**Live demo:** `web/` — a browser app you can run locally (see below) or
-deploy as a static site (Vercel/Render).
+## Benchmark
 
-## What's real vs. scripted
+Each environment exposes the same interface (`web/src/bench.js`): a seeded reset, a
+clock that starts at your first input, a success check, a 0-100 score and a JSON
+export (**Export JSON** in the panel).
+
+| Env | Success | Score (max 100) | Seed controls |
+|---|---|---|---|
+| G1 | all 3 plates in the dishwasher | 30 per plate + up to 10 time bonus - 5 per fall | deterministic |
+| Franka | 3-cube stack (stage 1: A on B, stage 2: C on A), stable for 0.6 s | 45 per stage + up to 10 time bonus - 5 per dropped cube | cube positions and yaw |
+| Husky | survey beacon, sample collected (hold E 3 s), back at the lander | 30 per phase + up to 10 time bonus - 2 per boulder hit - 5 per rollover | which of 4 sample sites |
+
+A result file looks like `{ "env": "rover", "seed": 3, "success": true, "time_s": 92.4, "score": 98, "metrics": {...} }`.
+The Franka stack check follows [robosuite](https://github.com/ARISE-Initiative/robosuite)'s
+`Stack` environment (top cube resting on the bottom cube and released). The
+Panda model is from [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie)
+and the Husky meshes are Clearpath's, BSD-3 (`web/assets/scenes/*/LICENSE_*`).
+
+### Embedding on a website
+
+The game runs inside an iframe (no framing restrictions). `?embed=1` loads nothing
+until a visitor picks a mission, fits small frames, and keeps Space and the arrow
+keys from scrolling the host page:
+
+```html
+<iframe src="https://mujoco-playground-alpha.vercel.app/?embed=1" width="100%" height="560"
+        style="border:0;border-radius:12px" allow="fullscreen" loading="lazy" title="MuJoCo Playground"></iframe>
+```
+
+In Framer: **Insert > Embed**, choose HTML and paste the snippet (or choose URL and use
+`https://mujoco-playground-alpha.vercel.app/?embed=1`), and make the block at least 520 px tall.
+The visitor clicks a mission card once to give the frame keyboard focus.
+
+### Using World Labs worlds
+
+Drop a world exported from World Labs (Marble) or any glTF into
+`web/assets/worlds/<env id>/` (`g1`, `franka` or `rover`) with a `world.json`:
+
+```json
+{ "file": "scene.glb", "position": [0, 0, 0], "rotation": [0, 0, 0], "scale": 1, "hide": ["tree1", "tree2"] }
+```
+
+It is shown as the visual backdrop (three.js coordinates, y up) and `hide` lists
+MuJoCo body names whose stand-in visuals should be hidden. Physics still comes from
+the MuJoCo scene, so match the collision geometry you need in the scene XML.
+
+## G1: what's real vs. scripted
 
 - **Walking (W/A/S/D)**: a real pretrained locomotion policy from
   [unitree_rl_gym](https://github.com/unitreerobotics/unitree_rl_gym)
@@ -105,9 +146,10 @@ python scripts/export_policy.py /tmp/unitree_rl_gym/deploy/pre_train/g1/motion.p
   its other bundled example scenes/robots were removed, keeping only what
   this app actually uses), plus `src/g1Control.js` (all G1-specific
   control: the walking policy inference loop, jump, grab, fall detection,
-  task tracking) and `src/g1Scene.js` (loads the task scene's assets into
-  MuJoCo's virtual filesystem).
-- `scripts/` — local Python dev/test scripts (CPU-only, no GPU needed) and
+  task tracking) and `src/sceneLoader.js` (downloads a scene's assets into
+  MuJoCo's virtual filesystem); the other robots live in `src/frankaControl.js`
+  and `src/marsControl.js`, the registry in `src/envs.js`, scoring in `src/bench.js`.
+- `scripts/` — `build_bimanual.py` and `build_mars.py` generate the Franka and Mars scenes, `make_manifests.py` lists each scene's files for the browser; plus local Python dev/test scripts (CPU-only, no GPU needed) and
   the ONNX export script.
 
 ## Known rough edges
