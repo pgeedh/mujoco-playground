@@ -127,7 +127,7 @@ python scripts/export_policy.py /tmp/unitree_rl_gym/deploy/pre_train/g1/motion.p
   for exactly this reason. Worth remembering if you add new scene geometry.
 ## Deploying (Vercel)
 
-Set the project's **Root Directory** to `web`. `web/vercel.json` runs
+The repo-root `vercel.json` builds `web/` (and `web/vercel.json` covers the case where the project's Root Directory is set to `web`). The build runs
 `npm run build` (`web/scripts/build.mjs`), which copies the runtime
 dependencies out of `node_modules` into `web/dist/`, served as a static site.
 Test locally with `cd web && npm install && npm run build && cd dist && python3 -m http.server 8080`.
