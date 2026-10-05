@@ -51,9 +51,13 @@ const CFG = {
 // toward objects. GRAB_RANGE is generous to compensate: "standing near
 // something" counts as reach, since the hand can't stretch out for it.
 const GRAB_RANGE = 1.6; // meters, wrist-to-prop distance to allow grabbing
-const GRABBABLE_BODIES = ["grab_plate1", "grab_plate2", "grab_plate3"];
+const GRABBABLE_BODIES = [
+  "grab_plate1", "grab_plate2", "grab_plate3",
+  "grab_ball1", "grab_ball2", "grab_ball3",
+  "grab_crate1", "grab_crate2",
+];
 
-// Task: load every plate into the dishwasher.
+// Optional goal in the sandbox: load every plate into the dishwasher.
 const TASK_ZONES = {
   grab_plate1: "dishwasher",
   grab_plate2: "dishwasher",
@@ -147,7 +151,7 @@ export class G1Controller {
       this.zoneBodies[zoneName] = nameId(mujoco.mjtObj.mjOBJ_BODY.value, zoneName);
     }
     this.delivered = {};
-    for (const name of GRABBABLE_BODIES) this.delivered[name] = false;
+    for (const name of Object.keys(TASK_ZONES)) this.delivered[name] = false;
   }
 
   _updateCommand() {
@@ -288,7 +292,7 @@ export class G1Controller {
    * afterward (the ball especially) doesn't un-deliver it. Picking it back
    * up and carrying it away does clear it, though, so it can be redone. */
   _updateDelivery(data) {
-    for (const propName of GRABBABLE_BODIES) {
+    for (const propName of Object.keys(TASK_ZONES)) {
       if (this.heldByRightHand === propName || this.heldByLeftHand === propName) {
         this.delivered[propName] = false;
         continue;
@@ -308,12 +312,13 @@ export class G1Controller {
   _updateStatusText() {
     const el = document.getElementById("grab-status");
     if (!el) return;
-    const hands = `Right hand: ${this.heldByRightHand || "empty"} | Left hand: ${this.heldByLeftHand || "empty"}`;
+    const pretty = (n) => (n ? n.replace("grab_", "") : "empty");
+    const hands = `Right hand: ${pretty(this.heldByRightHand)} | Left hand: ${pretty(this.heldByLeftHand)}`;
     const doneCount = Object.values(this.delivered).filter(Boolean).length;
-    const total = GRABBABLE_BODIES.length;
+    const total = Object.keys(TASK_ZONES).length;
     const task = doneCount === total
-      ? "Dishwasher loaded! All plates in."
-      : `Dishwasher: ${doneCount}/${total} plates loaded`;
+      ? "Bonus: dishwasher loaded, all plates in!"
+      : `Optional goal: load the dishwasher (${doneCount}/${total} plates)`;
     el.innerHTML = `${hands}<br>${task}`;
   }
 

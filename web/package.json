@@ -7,8 +7,7 @@
     "lib": "lib"
   },
   "scripts": {
-    "build": "esbuild ./src/main.js --bundle --sourcemap --format=esm --outdir=./build --platform=node",
-    "test": "node test_load.mjs"
+    "build": "node scripts/build.mjs"
   },
   "repository": {
     "type": "git",

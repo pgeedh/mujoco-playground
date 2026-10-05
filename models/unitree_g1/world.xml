@@ -18,6 +18,10 @@
     <material name="path" texture="pathtex" texuniform="true" texrepeat="2 2" reflectance="0.02"/>
 
     <material name="plate" rgba="0.92 0.92 0.88 1" shininess="0.4"/>
+    <material name="ball_red" rgba="0.9 0.22 0.2 1" shininess="0.6"/>
+    <material name="ball_blue" rgba="0.2 0.45 0.95 1" shininess="0.6"/>
+    <material name="ball_yellow" rgba="0.98 0.82 0.2 1" shininess="0.6"/>
+    <material name="crate" rgba="0.72 0.52 0.28 1"/>
     <material name="dishwasher_body" rgba="0.68 0.7 0.72 1" shininess="0.5" reflectance="0.15"/>
     <material name="dishwasher_rack" rgba="0.35 0.36 0.38 1"/>
     <material name="counter" rgba="0.8 0.78 0.74 1"/>
@@ -97,6 +101,20 @@
     </body>
 
     <!-- A couple of lamp posts for atmosphere near the path. -->
+
+    <!-- Free-roam sandbox props: grabbable like the plates (Q/E), same
+         non-robot-colliding group so they can't trip the walking policy. -->
+    <body name="grab_ball1" pos="0.6 -1.0 0.11"><freejoint/>
+      <geom name="grab_ball1_geom" type="sphere" size="0.11" material="ball_red" density="150" contype="4" conaffinity="4"/></body>
+    <body name="grab_ball2" pos="1.9 -0.95 0.11"><freejoint/>
+      <geom name="grab_ball2_geom" type="sphere" size="0.11" material="ball_blue" density="150" contype="4" conaffinity="4"/></body>
+    <body name="grab_ball3" pos="3.4 1.3 0.11"><freejoint/>
+      <geom name="grab_ball3_geom" type="sphere" size="0.11" material="ball_yellow" density="150" contype="4" conaffinity="4"/></body>
+    <body name="grab_crate1" pos="0.5 1.1 0.12"><freejoint/>
+      <geom name="grab_crate1_geom" type="box" size="0.12 0.12 0.12" material="crate" density="200" contype="4" conaffinity="4"/></body>
+    <body name="grab_crate2" pos="2.6 -1.4 0.12"><freejoint/>
+      <geom name="grab_crate2_geom" type="box" size="0.12 0.12 0.12" material="crate" density="200" contype="4" conaffinity="4"/></body>
+
     <body name="lamp1" pos="0.3 -1.3 0">
       <geom type="cylinder" size="0.03 0.9" pos="0 0 0.9" material="lamp_post" contype="0" conaffinity="0"/>
       <geom type="sphere" size="0.08" pos="0 0 1.85" material="lamp_glow" contype="0" conaffinity="0"/>
