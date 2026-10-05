@@ -109,7 +109,7 @@ xml = f'''<mujoco model="g1 nuclear plant">
 (OUT / "plant.xml").write_text(xml)
 mission = {
     "bounds": [X0, X1, Y0, Y1], "start": [0.0, 0.0], "terminal": list(TERM), "candidates": CANDIDATES, "shields": [list(s) for s in SHIELDS],
-    "reactor": [RX, RY, 2.4], "shapes": shapes, "budget_gy": 10.0, "report_radius": 2.2, "tag_radius": 3.5,
+    "reactor": [RX, RY, 2.4], "shapes": shapes, "budget_gy": 40.0, "report_radius": 2.2, "tag_radius": 3.5,
 }
 (OUT / "plant_mission.json").write_text(json.dumps(mission))
 print("wrote plant.xml", len(g), "geoms")

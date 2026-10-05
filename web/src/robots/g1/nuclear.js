@@ -4,7 +4,6 @@
 import * as THREE from "three";
 import { makeRng } from "../../core/bench.js";
 import { RadiationField } from "./radiation.js";
-import { Geiger } from "./geiger.js";
 import { PlantMap } from "./plantMap.js";
 
 const N_REAL = 3, MAX_TAGS = 3;
@@ -13,7 +12,7 @@ const STEAM_N = 360;
 
 export class PlantMission {
   constructor() {
-    this.map = new PlantMap(); this.geiger = new Geiger();
+    this.map = new PlantMap();
     this._prev = {}; this.keys = null;
   }
 
@@ -34,14 +33,14 @@ export class PlantMission {
     }
     scene.add(this.visuals);
   }
-  dispose() { this.map.hide(); this.geiger.stop(); if (this.visuals && this.visuals.parent) this.visuals.parent.remove(this.visuals); }
+  dispose() { this.map.hide(); if (this.visuals && this.visuals.parent) this.visuals.parent.remove(this.visuals); }
 
   reset(data, seed) {
     this.field = new RadiationField({ shields: this.cfg.shields, reactor: this.cfg.reactor });
     const rng = makeRng(seed * 2654435 + 11);
     const order = this.cfg.candidates.map((c, i) => [rng(), i]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
     const real = new Set(order.slice(0, N_REAL));
-    this.sources = this.cfg.candidates.filter((_, i) => real.has(i)).map((c) => ({ ...c, A: 2400 + rng() * 1200, found: false }));
+    this.sources = this.cfg.candidates.filter((_, i) => real.has(i)).map((c) => ({ ...c, A: 1500 + rng() * 1000, found: false }));
     this.field.setSources(this.sources);
     this.tags = []; this.trail = []; this._trailAt = null;
     this.absorbed = 0; this.doseRate = this.field.bg; this.peak = this.doseRate; this.dead = false;
@@ -50,7 +49,6 @@ export class PlantMission {
     if (this.flags) while (this.flags.children.length) this.flags.remove(this.flags.children[0]);
     if (this.steamAge) this.steamAge.fill(99);
     this.map.show(this.cfg);
-    this.geiger.ensure();
   }
 
   _pose(data) {
@@ -78,10 +76,8 @@ export class PlantMission {
       if (this._edge("KeyG") && this.tags.length) { this.tags.pop(); this.flags.remove(this.flags.children[this.flags.children.length - 1]); }
       if (this._edge("Enter") || this._edge("KeyR")) this._report(p);
     }
-    if (this._edge("KeyN")) this.geiger.muted = !this.geiger.muted;
     // survey trail: one dot every 0.45 m painted with the dose rate measured there
     if (!this._trailAt || Math.hypot(p.x - this._trailAt[0], p.y - this._trailAt[1]) > 0.45) { this.trail.push([p.x, p.y, this.doseRate]); this._trailAt = [p.x, p.y]; if (this.trail.length > 700) this.trail.shift(); }
-    this.geiger.update(this.doseRate, dtSec);
     this.map.draw({ x: p.x, y: p.y, yaw: p.yaw, trail: this.trail, tags: this.tags, revealed: this.reveal }, this.finished ? "Report filed" : `Leaks found: ${this.found}/${N_REAL}`);
     this._hud(p);
     this._effects(dtSec);
@@ -114,7 +110,7 @@ export class PlantMission {
     const d = this.doseRate, bars = Math.max(0, Math.min(10, Math.round((Math.log10(Math.max(d, 0.4) / 0.4) / Math.log10(4000 / 0.4)) * 10)));
     const gauge = "█".repeat(bars) + "░".repeat(10 - bars), term = Math.hypot(p.x - this.cfg.terminal[0], p.y - this.cfg.terminal[1]);
     const lead = this.msg ? `<b>${this.msg}</b><br>` : "<b>Find the radioactive leaks, flag them (F), then report at the terminal (Enter).</b><br>";
-    el.innerHTML = lead + `Dose rate <b>${d < 10 ? d.toFixed(1) : Math.round(d)} Gy/h</b> ${gauge} · Absorbed <b>${this.absorbed.toFixed(2)} / ${this.cfg.budget_gy} Gy</b><br>Flags ${this.tags.length}/${MAX_TAGS} · Terminal ${term.toFixed(0)} m · <span style="opacity:.7">N mutes the Geiger counter</span>`;
+    el.innerHTML = lead + `Dose rate <b>${d < 10 ? d.toFixed(1) : Math.round(d)} Gy/h</b> ${gauge} · Absorbed <b>${this.absorbed.toFixed(2)} / ${this.cfg.budget_gy} Gy</b><br>Flags ${this.tags.length}/${MAX_TAGS} · Terminal ${term.toFixed(0)} m`;
   }
 
   _effects(dt) {

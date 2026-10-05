@@ -22,6 +22,44 @@ policy. There is no server, so any static host works.
 
 ---
 
+## The three games at a glance
+
+These GIFs are recorded from the live game with the real HUD, driven by a script that plays the way you would (nothing is edited or
+mocked up). The label in the corner says whether it is real time or sped up.
+
+### 1. Nuclear plant leak (Unitree G1)
+
+![G1 walking through the plant toward a leak while the dose rate climbs, then planting a flag](docs/gifs/g1_nuclear_plant.gif)
+
+**What it does.** You steer a Unitree G1 humanoid through a nuclear power plant where primary coolant is leaking. Six pipe couplings steam, but
+only three are radioactive, and they all look the same. **What you are watching:** the G1 is walking with a real learned policy toward a
+leak. The gauge at the bottom left shows the dose rate climbing from 0.4 to about 250 Gy/h as it closes in, the plan map at the bottom right
+paints its path by dose (green to red), and at the end it plants a yellow flag with `F`. **Your job:** flag all three leaks, walk back to
+the green terminal pad and press `Enter` to report, before the radiation uses up the robot's 40 Gy budget.
+
+### 2. Containment breach (two Franka arms)
+
+![Two Franka arms relaying sample tubes through the airlock into the red biohazard case under a purge countdown](docs/gifs/franka_biolab.gif)
+
+**What it does.** A virus sample has leaked in a biosafety lab and the building purge is counting down. You operate two Franka Panda arms with
+real contact friction. **What you are watching:** the left arm picks a sample tube from the rack (the only place it can reach), sets it
+down on the airlock tray in the middle, and the right arm picks it up and carries it into the red biohazard case (the only place it can
+reach). The red beacon pulses and the clock at the top counts down to the purge. **Your job:** move all four tubes into the case without
+spilling any, then press the red SEAL button. You switch arms with `Tab`.
+
+### 3. Life on Mars? (Clearpath Husky with SLAM)
+
+![Husky driving across the Martian surface, with the SLAM map filling in at the bottom right](docs/gifs/husky_mars.gif)
+
+**What it does.** A Clearpath Husky rover drives across a Mars landscape built from a real NASA surface photo, with Mars gravity, craters,
+boulders, dust, a battery and wheel slip. **What you are watching (20x speed):** the rover leaves the lander and heads for the survey
+beacon and the sample site. At the top the HUD compares two position errors: the rover's own **SLAM** estimate (under 1 to 4 m) and plain
+wheel odometry (tens of metres, because wheels slip in the dust). The map at the bottom right fills in as the lidar sees boulders, with the
+green SLAM path next to the red odometry path. **Your job:** reach the survey beacon, collect the sample (hold `E` for 3 s) and bring it back
+to the lander before the battery runs out, navigating by the rover's own map.
+
+---
+
 ## The missions
 
 Each mission opens with a short, skippable **storyboard** ([see below](#storyboard-intros)): the story, a camera fly-through of
@@ -40,11 +78,11 @@ that can go in is a robot with a dosimeter on its chest.*
   [unitree_rl_gym](https://github.com/unitreerobotics/unitree_rl_gym) (an LSTM exported to ONNX, `scripts/g1/export_policy.py`)
   running at 50 Hz in the browser. If it falls it is stood back up where it fell; each fall costs points.
 - **Radiation model** (`web/src/robots/g1/radiation.js`). Dose rate = background + `A / (r² + ε)` per leak, multiplied by 0.12 for every
-  concrete shield wall and 0.05 for the reactor's bio-shield that lies between you and the leak. You read it on a gauge, hear it
-  as a Geiger counter (Poisson clicks, `geiger.js`), and see it painted along your path on the plan map. Steam is vented at *all* six
+  concrete shield wall and 0.05 for the reactor's bio-shield that lies between you and the leak. You read it on a gauge and see it painted along your path on the plan map. Steam is vented at *all* six
   couplings, so steam alone gives nothing away.
-- **Dose budget.** The robot's electronics tolerate 10 Gy. Stand next to a leak and it dies in seconds ("electronics fried by
-  radiation"); triangulate from a few metres instead. Flags must land within 3.5 m of a leak.
+- **Dose budget.** The robot's electronics tolerate 40 Gy. Leak strengths are tuned so that a careful route absorbs roughly 5 to 12 Gy and a
+  sloppy one (2.5 times as long in the hall) 14 to 30 Gy, so the mission is achievable. Standing next to a leak still burns through the
+  budget in under a minute ("electronics fried by radiation"), so triangulate from a few metres instead. Flags must land within 3.5 m of a leak.
 - **World.** A procedurally built plant (`scripts/g1/build_plant.py`): reactor vessel, steam generators, pressurizer, turbine, coolant
   pumps, primary and secondary piping, shield walls and a control terminal. Only the floor and the outer walls collide, because the
   walking policy was trained on flat ground and trips on obstacles.
@@ -243,7 +281,7 @@ web/
    │  ├─ sceneLoader.js             downloads a scene's files into MuJoCo's virtual filesystem
    │  └─ worlds.js                  optional World Labs / glTF backdrops
    └─ robots/
-      ├─ g1/       controller.js (walking policy, jump, falls) · nuclear.js (mission) · radiation.js · geiger.js · plantMap.js · story.js
+      ├─ g1/       controller.js (walking policy, jump, falls) · nuclear.js (mission) · radiation.js · plantMap.js · story.js
       ├─ franka/   controller.js (IK teleop of two arms + the biohazard mission) · story.js
       └─ husky/    controller.js (driving, battery, mission) · slam.js (lidar, odometry, scan matching) · minimap.js · story.js
 scripts/
