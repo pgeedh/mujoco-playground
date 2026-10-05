@@ -1,5 +1,7 @@
 # mujoco-playground
 
+**Play it:** https://mujoco-playground-alpha.vercel.app
+
 Pick a robot and play it in your browser: real MuJoCo physics (WebAssembly)
 in a free-roam park sandbox. Controls: **W A S D** move, **Space** jump,
 **Q / E** grab with the right / left hand, **C** camera, **Esc** back to the
