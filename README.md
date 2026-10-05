@@ -35,7 +35,7 @@ mocked up). The label in the corner says whether it is real time or sped up.
 only three are radioactive, and they all look the same. **What you are watching:** the G1 is walking with a real learned policy toward a
 leak. The gauge at the bottom left shows the dose rate climbing from 0.4 to about 250 Gy/h as it closes in, the plan map at the bottom right
 paints its path by dose (green to red), and at the end it plants a yellow flag with `F`. **Your job:** flag all three leaks, walk back to
-the green terminal pad and press `Enter` to report, before the radiation uses up the robot's 10 Gy budget.
+the green terminal pad and press `Enter` to report, before the radiation uses up the robot's 40 Gy budget.
 
 ### 2. Containment breach (two Franka arms)
 
@@ -80,8 +80,9 @@ that can go in is a robot with a dosimeter on its chest.*
 - **Radiation model** (`web/src/robots/g1/radiation.js`). Dose rate = background + `A / (r² + ε)` per leak, multiplied by 0.12 for every
   concrete shield wall and 0.05 for the reactor's bio-shield that lies between you and the leak. You read it on a gauge and see it painted along your path on the plan map. Steam is vented at *all* six
   couplings, so steam alone gives nothing away.
-- **Dose budget.** The robot's electronics tolerate 10 Gy. Stand next to a leak and it dies in seconds ("electronics fried by
-  radiation"); triangulate from a few metres instead. Flags must land within 3.5 m of a leak.
+- **Dose budget.** The robot's electronics tolerate 40 Gy. Leak strengths are tuned so that a careful route absorbs roughly 5 to 12 Gy and a
+  sloppy one (2.5 times as long in the hall) 14 to 30 Gy, so the mission is achievable. Standing next to a leak still burns through the
+  budget in under a minute ("electronics fried by radiation"), so triangulate from a few metres instead. Flags must land within 3.5 m of a leak.
 - **World.** A procedurally built plant (`scripts/g1/build_plant.py`): reactor vessel, steam generators, pressurizer, turbine, coolant
   pumps, primary and secondary piping, shield walls and a control terminal. Only the floor and the outer walls collide, because the
   walking policy was trained on flat ground and trips on obstacles.

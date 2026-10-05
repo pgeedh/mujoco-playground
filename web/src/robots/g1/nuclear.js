@@ -40,7 +40,7 @@ export class PlantMission {
     const rng = makeRng(seed * 2654435 + 11);
     const order = this.cfg.candidates.map((c, i) => [rng(), i]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
     const real = new Set(order.slice(0, N_REAL));
-    this.sources = this.cfg.candidates.filter((_, i) => real.has(i)).map((c) => ({ ...c, A: 2400 + rng() * 1200, found: false }));
+    this.sources = this.cfg.candidates.filter((_, i) => real.has(i)).map((c) => ({ ...c, A: 1500 + rng() * 1000, found: false }));
     this.field.setSources(this.sources);
     this.tags = []; this.trail = []; this._trailAt = null;
     this.absorbed = 0; this.doseRate = this.field.bg; this.peak = this.doseRate; this.dead = false;
