@@ -24,6 +24,15 @@ const CSS = `
 #change-robot{position:fixed;top:10px;left:10px;z-index:1000;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;
   font:13px -apple-system,'Segoe UI',Arial,sans-serif;color:#fff;background:rgba(0,0,0,.55)}
 #change-robot:hover{background:rgba(0,0,0,.75)}
+@media (max-width:860px),(max-height:620px){
+  #menu{padding:12px;justify-content:flex-start;overflow:auto}
+  #menu h1{font-size:30px}
+  #menu p.sub{margin-bottom:14px;font-size:13px}
+  #menu .cards{gap:10px}
+  #menu .card{width:min(250px,92%);padding:12px 14px}
+  #menu .card .blurb{min-height:0;margin:6px 0 10px;font-size:12px}
+  #menu .hint{margin-top:12px}
+}
 `;
 
 export function initMenu({ onStart, onOpen }) {

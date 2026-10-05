@@ -33,6 +33,21 @@ The Franka stack check follows [robosuite](https://github.com/ARISE-Initiative/r
 Panda model is from [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie)
 and the Husky meshes are Clearpath's, BSD-3 (`web/assets/scenes/*/LICENSE_*`).
 
+### Embedding on a website
+
+The game runs inside an iframe (no framing restrictions). `?embed=1` loads nothing
+until a visitor picks a mission, fits small frames, and keeps Space and the arrow
+keys from scrolling the host page:
+
+```html
+<iframe src="https://mujoco-playground-alpha.vercel.app/?embed=1" width="100%" height="560"
+        style="border:0;border-radius:12px" allow="fullscreen" loading="lazy" title="MuJoCo Playground"></iframe>
+```
+
+In Framer: **Insert > Embed**, choose HTML and paste the snippet (or choose URL and use
+`https://mujoco-playground-alpha.vercel.app/?embed=1`), and make the block at least 520 px tall.
+The visitor clicks a mission card once to give the frame keyboard focus.
+
 ### Using World Labs worlds
 
 Drop a world exported from World Labs (Marble) or any glTF into

@@ -149,6 +149,10 @@ export class MuJoCoDemo {
   }
 
   async init() {
+    // ?embed=1: used when the game sits inside an iframe on another page. Load nothing
+    // until a mission is picked (saves the visitor ~35 MB) and stop game keys scrolling the host page.
+    this.embed = new URLSearchParams(location.search).has('embed');
+    if (this.embed) { document.body.classList.add('embed'); return; }
     await this.loadEnv(ENVS[0].id);
     this.gui = new GUI();
     setupGUI(this);
@@ -345,6 +349,13 @@ export class MuJoCoDemo {
     this.renderer.render( this.scene, this.camera );
   }
 }
+
+// Game keys must not scroll the page (matters most inside an iframe).
+window.addEventListener('keydown', (e) => {
+  const menu = document.getElementById('menu');
+  if (menu && !menu.hidden) return;   // the menu keeps normal keyboard behaviour
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
+});
 
 let demo = new MuJoCoDemo();
 window.demo = demo; // for console debugging
