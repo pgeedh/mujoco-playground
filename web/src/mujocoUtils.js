@@ -144,7 +144,7 @@ export function setupGUI(parentContext) {
       parentContext.container.removeChild(parentContext.container.lastChild);
     }
   });
-  // Space is bound to the G1's jump instead (see g1Control.js) — no
+  // Space is bound to the G1's jump instead (see robots/g1/controller.js) — no
   // pause-on-spacebar in this build.
 
   // Add reload model button.

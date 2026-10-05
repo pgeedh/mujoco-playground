@@ -16,11 +16,10 @@ copy("index.html");
 copy("src");
 copy("assets");
 copy("node_modules/three/build", undefined, (s) => noMaps(s) && !s.endsWith(".cjs"));
-copy("node_modules/three/examples/jsm");
-copy("node_modules/@mujoco/mujoco");
+// three/examples/jsm: everything except the big optional decoder libraries (keep lil-gui)
+copy("node_modules/three/examples/jsm", undefined, (s) => noMaps(s) && (!s.includes("/jsm/libs/") || s.includes("lil-gui")));
+copy("node_modules/@mujoco/mujoco", undefined, (s) => noMaps(s) && !s.includes("/mujoco/mt"));   // skip the multithreaded build
 copy("node_modules/onnxruntime-web/dist/ort.min.js");
-copy("node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs");
-copy("node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm");
 copy("node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.mjs");
 copy("node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm");
 

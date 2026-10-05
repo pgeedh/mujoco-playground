@@ -304,7 +304,7 @@
     <!-- Legs are torque motors, not position servos: the pretrained walking
          policy (unitree_rl_gym) outputs PD targets and expects to be paired
          with explicit kp/kd PD control computed by the controller, not
-         MuJoCo's built-in position-actuator gains. See web/src/g1Control.js. -->
+         MuJoCo's built-in position-actuator gains. See web/src/robots/g1/controller.js. -->
     <motor class="g1" name="left_hip_pitch_joint" joint="left_hip_pitch_joint"/>
     <motor class="g1" name="left_hip_roll_joint" joint="left_hip_roll_joint"/>
     <motor class="g1" name="left_hip_yaw_joint" joint="left_hip_yaw_joint"/>

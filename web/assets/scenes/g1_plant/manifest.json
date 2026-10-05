@@ -55,6 +55,7 @@
 "assets/waist_yaw_link_rev_1_0.STL",
 "g1.xml",
 "g1_with_hands.xml",
-"scene.xml",
-"world.xml"
+"plant.xml",
+"plant_mission.json",
+"scene.xml"
 ]

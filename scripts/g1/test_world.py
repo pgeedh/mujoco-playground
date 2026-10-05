@@ -23,7 +23,7 @@ def main():
     print(f"grabbable props: {[model.body(i).name for i in range(model.nbody) if 'grab' in model.body(i).name]}")
     print(f"dishwasher present: {[model.body(i).name for i in range(model.nbody) if model.body(i).name == 'dishwasher']}")
 
-    # Legs 0-11 are torque motors (see web/src/g1Control.js for the real
+    # Legs 0-11 are torque motors (see web/src/robots/g1/controller.js for the real
     # browser control loop, driven by the pretrained walking policy);
     # arms/waist 12-28 are position servos held at the standing keyframe.
     # This script only checks the model is valid and roughly balances at
