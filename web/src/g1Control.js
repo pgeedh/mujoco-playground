@@ -100,8 +100,13 @@ export class G1Controller {
     this.heldByLeftHand = null;
 
     this.fallTimer = 0;
+    this.falls = 0;
+    this.anyInput = false;
 
-    window.addEventListener("keydown", (e) => { this.keys[e.code] = true; });
+    window.addEventListener("keydown", (e) => {
+      this.keys[e.code] = true;
+      if (["KeyW", "KeyA", "KeyS", "KeyD", "Space", "KeyQ", "KeyE"].includes(e.code)) this.anyInput = true;
+    });
     window.addEventListener("keyup", (e) => { this.keys[e.code] = false; });
   }
 
@@ -356,6 +361,7 @@ export class G1Controller {
 
   _resetAfterFall(data) {
     console.log("[reset] robot fell over — auto-resetting");
+    this.falls++;
     // Reset only the robot's own qpos/qvel (the first robotNq/robotNv
     // entries), not the whole world via mj_resetData: falling shouldn't
     // wipe already-delivered plates or send everything flying back to its
@@ -418,5 +424,32 @@ export class G1Controller {
     this._updateGrab(data);
     this._updateDelivery(data);
     this._updateStatusText();
+  }
+
+  // ---- benchmark interface (see bench.js) ----------------------------------
+  hasInput() { return this.anyInput; }
+
+  /** Back to the start: robot at spawn, every prop at its XML position. */
+  reset(data, seed) {
+    data.qpos.set(this.model.qpos0.subarray(0, this.model.nq));
+    data.qvel.fill(0);
+    this.mujoco.mj_forward(this.model, data);
+    this.heldByRightHand = null; this.heldByLeftHand = null;
+    for (const name of Object.keys(this.delivered)) this.delivered[name] = false;
+    this.h.fill(0); this.c.fill(0); this.prevAction.fill(0);
+    this.targetDofPos = Float32Array.from(CFG.legDefaultAngles);
+    this.stepCounter = 0; this.cmd = [0, 0, 0];
+    this.jumpState = "idle"; this.jumpTimer = 0; this.jumpOverride = null;
+    this.fallTimer = 0; this.falls = 0; this.anyInput = false;
+    this._updateStatusText();
+  }
+
+  _plateCount() { return Object.values(this.delivered).filter(Boolean).length; }
+  isSuccess() { return this._plateCount() === Object.keys(TASK_ZONES).length; }
+  getMetrics() { return { plates: `${this._plateCount()}/${Object.keys(TASK_ZONES).length}`, falls: this.falls }; }
+  score(time, limit, success) {
+    let s = 30 * this._plateCount();
+    if (success) s += 10 * Math.max(0, 1 - time / limit);
+    return Math.max(0, Math.min(100, s - 5 * this.falls));
   }
 }
